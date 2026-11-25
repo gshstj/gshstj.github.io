@@ -1,0 +1,130 @@
+// [C 담당] 화면에 보이는 월드 전부: 배경, 캐릭터 스프라이트, 이펙트, 카메라, 히트스톱.
+// 계약: init, update, drawWorld 내보내기.
+// 게임 로직은 건드리지 않고, game 상태를 읽고 이벤트를 들어서 그리기만 한다.
+// 예외: game.hitstop, game.timeScale, game.camera는 fx가 값을 넣는다.
+//
+// 파일 구성
+//   tuning.js       연출 수치와 단계별 색
+//   pix.js          픽셀 그리기 도우미
+//   rig.js          사람 모양 픽셀 리그 (주인공과 적 공용)
+//   hero.js         주인공 자세, 킥 4종 모션, 다리 궤적과 잔상
+//   enemySprites.js 적 3종, 공격 예고 표시, 투척물
+//   particles.js    파티클
+//   effects.js      이벤트별 연출, 화면 전체 연출, 카메라와 시간
+//   backgrounds.js  배경 (alley, classroom, 기본)
+import { W, H, GROUND_Y } from '../core/config.js';
+import { EV, on } from '../core/events.js';
+import { makeCanvas, blit, q, D, clamp } from './pix.js';
+import * as particles from './particles.js';
+import * as hero from './hero.js';
+import * as fxs from './effects.js';
+import * as backgrounds from './backgrounds.js';
+import { drawEnemy, drawTelegraph, drawProjectile, mem } from './enemySprites.js';
+
+const M = backgrounds.M;
+// 장면 버퍼: 논리 해상도 그대로(사방 여백 M) 그린 뒤 화면에 한 번에 찍는다.
+// 이렇게 하면 줌인을 해도 픽셀이 뭉개지지 않고, 흔들려도 가장자리가 비지 않는다.
+const [scene, sg] = makeCanvas(W + M * 2, H + M * 2);
+
+let time = 0; // 연출용 실제 시간(초)
+
+// 다른 담당이 자기 폴더에 만든 이벤트 이름 (가져오지 않고 문자열만 맞춘다)
+const XEV = { ENEMY_BRACE: 'enemy:brace', ENEMY_SWAP: 'enemy:swap', PROJECTILE_END: 'projectile:end' };
+
+export function init(game) {
+  on(EV.KICK_START, (d) => fxs.kickStart(game, d || {}));
+  on(EV.KICK_HIT, (d) => {
+    d = d || {};
+    // 다리가 닿는 순간에 이펙트가 터지도록 맞춘다. 내려찍기는 든 다리가 떨어질 때까지 잠깐 기다린다.
+    const wait = hero.syncImpact(game);
+    if (wait > 0.005) {
+      game.hitstop = Math.max(game.hitstop || 0, wait + 0.017);
+      fxs.later(wait, () => fxs.kickHit(game, d));
+    } else fxs.kickHit(game, d);
+  });
+  on(EV.KICK_MISS, (d) => fxs.kickMiss(game, d || {}));
+  on(EV.KICK_LEVEL_UP, (d) => { fxs.levelUp(game, d || {}); hero.aura((d && d.level) || (game.player && game.player.kick.level) || 1); });
+  on(EV.PUNCH_HIT, (d) => fxs.punchHit(game, d || {}));
+  on(EV.PARRY_SUCCESS, (d) => { hero.syncImpact(game); fxs.parrySuccess(game, d || {}); });
+  on(EV.PARRY_FAIL, (d) => fxs.parryFail(game, d || {}));
+  on(EV.PLAYER_HIT, (d) => { hero.flash(); fxs.playerHit(game, d || {}); });
+  on(EV.PLAYER_DEAD, () => fxs.playerDead());
+  on(EV.ENEMY_TELEGRAPH, (d) => fxs.telegraph(game, d || {}));
+  on(EV.ENEMY_ATTACK, (d) => fxs.enemyAttack(game, d || {}));
+  on(EV.ENEMY_HIT, (d) => {
+    if (d && d.enemy) { const m = mem(d.enemy); m.flash = 0.1; m.armored = !!d.armored; }
+    fxs.enemyHit(game, d || {});
+  });
+  on(EV.ENEMY_DOWN, (d) => fxs.enemyDown(game, d || {}));
+  on(EV.STAGE_START, () => fxs.reset());
+  // enemies 담당이 자기 폴더에 만든 이벤트 (공용 EV에 없어서 문자열 이름으로 듣는다)
+  on(XEV.ENEMY_BRACE, (d) => fxs.brace(game, d || {}));
+  on(XEV.ENEMY_SWAP, (d) => fxs.swap(game, d || {}));
+  on(XEV.PROJECTILE_END, (d) => fxs.projectileEnd(game, d || {}));
+}
+
+export function update(game, dt) {
+  time += dt;
+  if (!game.player) return;
+  fxs.update(game, dt);
+  hero.update(game, dt, time);
+  for (const e of game.enemies) {
+    const m = mem(e);
+    if (m.flash > 0) m.flash -= dt;
+  }
+}
+
+function shadow(g, e) {
+  // 발밑 그림자. 높이 뜰수록 작아진다.
+  const lift = clamp((GROUND_Y - e.y) / 60);
+  const w = Math.round(((e.w || 14) / 2 + 3) * (1 - lift * 0.5));
+  const x = q(e.x);
+  g.fillStyle = 'rgba(6,4,14,0.4)';
+  g.fillRect(x - w, GROUND_Y, w * 2, 2);
+  g.fillRect(x - w + 2, GROUND_Y - 1, w * 2 - 4, 1);
+  g.fillRect(x - w + 2, GROUND_Y + 2, w * 2 - 4, 1);
+}
+
+export function drawWorld(ctx, game) {
+  const g = sg;
+  const camX = q(game.camera.x || 0);
+  const stage = game.stage;
+
+  g.setTransform(D, 0, 0, D, 0, 0);
+  g.globalAlpha = 1;
+  backgrounds.draw(g, stage ? stage.bg : null, stage ? stage.width : W, camX, time);
+  fxs.drawBgDim(g);
+
+  // 월드 (카메라 적용)
+  g.save();
+  g.translate(M - camX, M);
+  fxs.drawDecals(g);
+  fxs.drawPillar(g);
+  const p = game.player;
+  for (const e of game.enemies) if (e.alive !== false) shadow(g, e);
+  if (p && p.alive !== false) shadow(g, p);
+  particles.draw(g, true);
+  // 쓰러진 적을 먼저, 서 있는 적을 그 위에
+  for (const e of game.enemies) if (e.alive === false) drawEnemy(g, e, time);
+  for (const e of game.enemies) if (e.alive !== false) drawEnemy(g, e, time);
+  for (const pr of game.projectiles) if (pr.alive !== false) drawProjectile(g, pr, time);
+  if (p) hero.draw(g, game, time);
+  particles.draw(g, false);
+  for (const e of game.enemies) drawTelegraph(g, e, time);
+  g.restore();
+
+  fxs.drawOverlays(g, game, time);
+
+  // 장면 버퍼를 화면에 찍는다 (줌인은 타격 지점을 중심으로)
+  const z = game.camera.zoom || 1;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  if (z !== 1) {
+    const fx = clamp(fxs.cam.focusX - camX, 70, W - 70), fy = clamp(fxs.cam.focusY, 60, H - 60);
+    ctx.translate(fx, fy);
+    ctx.scale(z, z);
+    ctx.translate(-fx, -fy);
+  }
+  blit(ctx, scene, q(-M + fxs.cam.sx), q(-M + fxs.cam.sy));
+  ctx.restore();
+}
