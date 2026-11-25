@@ -33,6 +33,17 @@ export const T = {
     latchMs: 250,       // 히트스톱 중 눌린 키를 살려 두는 실제 시간(ms)
   },
 
+  rise: {
+    startup: 0.14,      // 다리를 차올리는 시간
+    active: 0.75,
+    recover: 0.3,
+    offset: 24,
+    radius: 150,        // 중심에서 좌우로 휩쓰는 범위 (화면의 절반 이상)
+    damage: 999,
+    knockback: 240,
+    launchVy: 640,
+  },
+
   hurt: {
     time: 0.3,          // 경직
     invuln: 0.6,        // 맞은 뒤 무적

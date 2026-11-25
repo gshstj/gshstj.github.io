@@ -88,7 +88,7 @@ function crack(x, size) {
 }
 
 // 킥 종류별 타격 방향 (라디안. +는 아래쪽)
-const HIT_ANGLE = { calf: 0.4, high: -0.55, mid: 0, axe: 1.25 };
+const HIT_ANGLE = { calf: 0.4, high: -0.55, mid: 0, axe: 1.25, rise: -1.35 };
 
 // ── 단계별 타격 이펙트 ──
 function levelHit(lv, x, y, dir, ang, crit, target) {

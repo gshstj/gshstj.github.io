@@ -9,6 +9,7 @@ const KEYMAP = {
   kick: ['KeyK'],
   confirm: ['Enter'],
   pause: ['Escape'],
+  aux: ['Backquote'],
 };
 
 const codeToAction = {};

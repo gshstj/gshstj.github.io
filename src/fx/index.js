@@ -20,6 +20,7 @@ import * as hero from './hero.js';
 import * as fxs from './effects.js';
 import * as backgrounds from './backgrounds.js';
 import { drawEnemy, drawTelegraph, drawProjectile, mem } from './enemySprites.js';
+import * as col from './col.js';
 
 const M = backgrounds.M;
 // 장면 버퍼: 논리 해상도 그대로(사방 여백 M) 그린 뒤 화면에 한 번에 찍는다.
@@ -61,6 +62,14 @@ export function init(game) {
   on(XEV.ENEMY_BRACE, (d) => fxs.brace(game, d || {}));
   on(XEV.ENEMY_SWAP, (d) => fxs.swap(game, d || {}));
   on(XEV.PROJECTILE_END, (d) => fxs.projectileEnd(game, d || {}));
+  on('fx:col', (d) => {
+    col.start(d || {});
+    fxs.addShake(99);
+    fxs.screen.flash = 1;
+    fxs.screen.flashColor = '#c8f4ff';
+    fxs.screen.dim = 0.7;
+    fxs.screen.dimHold = (d && d.duration) || 0.75;
+  });
 }
 
 export function update(game, dt) {
@@ -68,6 +77,8 @@ export function update(game, dt) {
   if (!game.player) return;
   fxs.update(game, dt);
   hero.update(game, dt, time);
+  col.update(dt);
+  if (col.active()) fxs.addShake(3); // 솟아 있는 동안 계속 울린다
   for (const e of game.enemies) {
     const m = mem(e);
     if (m.flash > 0) m.flash -= dt;
@@ -100,6 +111,7 @@ export function drawWorld(ctx, game) {
   g.translate(M - camX, M);
   fxs.drawDecals(g);
   fxs.drawPillar(g);
+  col.draw(g, false);
   const p = game.player;
   for (const e of game.enemies) if (e.alive !== false) shadow(g, e);
   if (p && p.alive !== false) shadow(g, p);
@@ -109,6 +121,7 @@ export function drawWorld(ctx, game) {
   for (const e of game.enemies) if (e.alive !== false) drawEnemy(g, e, time);
   for (const pr of game.projectiles) if (pr.alive !== false) drawProjectile(g, pr, time);
   if (p) hero.draw(g, game, time);
+  col.draw(g, true);
   particles.draw(g, false);
   for (const e of game.enemies) drawTelegraph(g, e, time);
   g.restore();

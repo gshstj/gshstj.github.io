@@ -63,7 +63,6 @@ export function drawLeg(g, S, J, pants, stripe, shoe, sole) {
   if (sole) line(g, J.ax - J.ty, J.ay + J.tx, bx - J.ty, by + J.tx, 1, sole); // 밑창
 }
 
-// 잔상용: 다리 전체를 한 색으로
 export function drawLegFlat(g, S, J, color) {
   drawLeg(g, S, J, color, null, color, null);
 }

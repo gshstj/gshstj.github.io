@@ -206,7 +206,6 @@ const CUTS = [
   { lines: ['"카프킥 마스터가 되겠다."'], draw: cutMaster, big: true },
 ];
 
-// 확인용: 컷 하나를 원하는 시점으로 바로 그린다 (그림 창 크기는 400x150)
 export const CUT_COUNT = CUTS.length;
 export function drawCutAt(ctx, index, t) { CUTS[index].draw(ctx, t); }
 

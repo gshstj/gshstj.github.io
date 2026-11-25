@@ -50,6 +50,7 @@ function newCtl() {
     parryMissed: [],                     // 이번 킥을 시작할 때 예고 중이었지만 쳐내지 못한 적
     punchDone: false, punchHit: false,
     xpGain: 0,                           // 아직 반영하지 않은 경험치
+    rise: null,
   };
 }
 
@@ -112,7 +113,7 @@ export function resetPlayer(game) {
 // ---------------------------------------------------------------------------
 // 피격
 function takeHit(game, p, { damage = 1, knockback = 80, source = null } = {}) {
-  if (!p.alive || p.invuln > 0) return false;
+  if (!p.alive || p.invuln > 0 || p.ctl.rise) return false;
   const k = p.kick, c = p.ctl;
   // 너무 일찍(또는 연타하다가) 찬 킥의 빈틈에 그 공격(또는 쳐낼 수 있던 투척물)을 맞았다
   const missedProjectile = source && source.kind !== 'enemy' && source.parryable;
@@ -308,6 +309,59 @@ function updateRecover(game, p, dt, inp) {
 }
 
 // ---------------------------------------------------------------------------
+const COL_EV = 'fx:col';
+
+function startCol(game, p, dir) {
+  const k = p.kick, c = p.ctl, R = T.rise;
+  if (dir) p.facing = dir;
+  endCombo(p);
+  Object.assign(k, {
+    phase: 'strike', step: k.comboLength - 1, move: 'rise', foot: 'right',
+    time: 0, hitAt: R.startup, strikeTime: R.startup + R.active, recoverTime: R.recover, connected: true,
+  });
+  c.kickBuf = c.punchBuf = c.jumpBuf = 0;
+  c.rise = { hit: [], burst: false };
+  p.state = 'kick';
+  p.stateTime = 0;
+  p.vx = 0;
+  emit(EV.KICK_START, { move: 'rise', foot: 'right', step: k.step, level: k.level });
+}
+
+function updateCol(game, p, dt) {
+  const k = p.kick, c = p.ctl, R = T.rise;
+  k.time += dt;
+  p.vx = 0;
+  const cx = p.x + p.facing * R.offset;
+  if (k.time >= R.startup - EPS && k.time < R.startup + R.active) {
+    if (!c.rise.burst) {
+      c.rise.burst = true;
+      emit(COL_EV, { x: cx, y: p.y, dir: p.facing, duration: R.active });
+    }
+    for (const e of game.enemies) {
+      if (!e.alive || c.rise.hit.includes(e) || Math.abs(e.x - cx) > R.radius) continue;
+      c.rise.hit.push(e);
+      e.takeHit({ damage: R.damage, knockback: R.knockback, crit: true, source: p });
+      e.vy = -R.launchVy;
+      e.onGround = false;
+      emit(EV.KICK_HIT, {
+        target: e, move: 'rise', foot: 'right', step: k.step, finisher: true, crit: true, damage: R.damage,
+        level: 5, x: e.x, y: e.y - 14, counter: false,
+      });
+    }
+    for (const pr of game.projectiles) if (pr.alive && Math.abs(pr.x - cx) <= R.radius) pr.alive = false;
+  }
+  if (k.phase === 'strike' && k.time >= k.strikeTime - EPS) {
+    k.phase = 'recover';
+    setState(p, 'recover');
+  }
+  if (k.time >= k.strikeTime + k.recoverTime - EPS) {
+    c.rise = null;
+    endCombo(p);
+    setState(p, 'idle');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 타격(J): 어깨치기
 function startPunch(p, dir) {
   const c = p.ctl;
@@ -425,7 +479,11 @@ export function updatePlayer(game, dt) {
     if (inp.punch) c.punchBuf = T.input.punchBuffer; else c.punchBuf = Math.max(0, c.punchBuf - dt);
     if (inp.jump) c.jumpBuf = T.input.jumpBuffer; else c.jumpBuf = Math.max(0, c.jumpBuf - dt);
 
-    if (p.state === 'hurt') {
+    if (c.rise) {
+      updateCol(game, p, dt);
+    } else if (pressed('aux') && p.onGround && p.state !== 'hurt') {
+      startCol(game, p, inp.dir);
+    } else if (p.state === 'hurt') {
       p.vx = approach(p.vx, 0, T.hurt.decel * dt);
       c.kickBuf = Math.max(0, c.kickBuf - dt);
       if (p.stateTime >= T.hurt.time) setState(p, p.onGround ? 'idle' : 'jump');
