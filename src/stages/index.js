@@ -10,6 +10,7 @@ import { SEV } from './events.js';
 import { T } from './tuning.js';
 import { T as PT } from '../player/tuning.js';
 import { makeEndlessStage, genWave } from './endless.js';
+import { updatePickups } from './pickups.js';
 
 export { STAGES };
 
@@ -93,6 +94,7 @@ export function startStage(game, index, opts = {}) {
 }
 
 export function updateStage(game, dt) {
+  updatePickups(game, dt); // 회복 아이템 (점수 모드)
   if (st.cleared || !game.stage) return;
   if (!game.player.alive) return; // 죽은 뒤에는 웨이브도 클리어도 진행하지 않는다
 

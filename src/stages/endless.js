@@ -21,7 +21,8 @@ export const ENDLESS = {
 // 손으로 짠 초반 (웨이브 번호는 0부터)
 const INTRO = [
   { hint: '끝이 없다. 맞지 않고 쓰러뜨릴수록 점수 배율이 오른다', spawns: [{ type: 'brawler', x: 300 }] },
-  { spawns: [{ type: 'brawler', side: 'right' }, { type: 'brawler', side: 'left', delay: 2.5 }] },
+  { hint: '다쳤을 때 쓰러진 적이 가끔 캔 음료를 떨어뜨린다. 밟고 지나가면 체력이 찬다',
+    spawns: [{ type: 'brawler', side: 'right' }, { type: 'brawler', side: 'left', delay: 2.5 }] },
   { spawns: [{ type: 'brawler', side: 'right' }, { type: 'shooter', side: 'left', delay: 1.5 }] },
   { hint: '큰 놈은 연타가 안 통한다. 패링 뒤 카운터, 마무리 찍기, 날아차기로 무너뜨려라',
     spawns: [{ type: 'heavy', side: 'right' }, { type: 'brawler', side: 'left', delay: 5 }] },

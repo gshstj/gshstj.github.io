@@ -111,6 +111,17 @@ export function init(game) {
     sfx.block();
   });
 
+  // 회복 아이템을 주웠다: 초록빛이 솟고 맑은 소리가 난다
+  on('pickup:heal', (d) => {
+    if (!d) return;
+    const GREEN = ['#ffffff', '#b8ffd0', '#3ac870', '#1a7a40'];
+    particles.spawn({ type: 'ring', x: d.x, y: d.y, r0: 2, r1: 18, colors: GREEN, life: 0.3, keep: true });
+    for (let i = 0; i < 12; i++) {
+      particles.spawn({ type: 'px', x: d.x + (Math.random() * 12 - 6), y: d.y, vx: Math.random() * 30 - 15, vy: -40 - Math.random() * 70,
+        life: 0.4 + Math.random() * 0.4, size: i % 4 === 0 ? 2 : 1, colors: GREEN });
+    }
+    sfx.levelUp();
+  });
   // 6단계부터: 킥이 등 뒤까지 휩쓴다. 뒤쪽으로도 바람이 인다.
   on(EV.KICK_START, (d) => {
     const p = game.player;
@@ -222,6 +233,26 @@ function shadow(g, e) {
   g.fillRect(x - w + 2, GROUND_Y + 2, w * 2 - 4, 1);
 }
 
+// 회복 아이템: 초록 캔 음료. 살짝 떠서 흔들리고, 사라지기 직전에는 깜빡인다. 큰 것(회복 2)은 금색 테두리.
+function drawPickup(g, it) {
+  if (it.life - it.age < 2.5 && Math.floor(it.age * 10) % 2) return;
+  const x = Math.round(it.x), bob = it.vy === 0 ? Math.round(Math.sin(time * 5 + it.x) * 1.5) : 0;
+  const y = Math.round(it.y) - 9 + bob;
+  g.fillStyle = 'rgba(120,255,160,0.25)'; // 은은한 빛
+  g.fillRect(x - 5, y - 2, 10, 12);
+  g.fillStyle = it.heal > 1 ? '#ffd84d' : '#0d0b16';
+  g.fillRect(x - 3, y - 1, 6, 10);
+  g.fillStyle = '#3ac870';
+  g.fillRect(x - 2, y, 4, 8);
+  g.fillStyle = '#b8ffd0';
+  g.fillRect(x - 2, y, 1, 8);
+  g.fillStyle = '#e8e8f0'; // 뚜껑
+  g.fillRect(x - 2, y, 4, 1);
+  g.fillStyle = '#ffffff'; // 십자 표시
+  g.fillRect(x - 1, y + 4, 3, 1);
+  g.fillRect(x, y + 3, 1, 3);
+}
+
 export function drawWorld(ctx, game) {
   const g = sg;
   const camX = q(game.camera.x || 0);
@@ -258,6 +289,7 @@ export function drawWorld(ctx, game) {
   for (const e of game.enemies) if (e.alive === false) drawFoe(g, e, time);
   for (const e of game.enemies) if (e.alive !== false) drawFoe(g, e, time);
   for (const pr of game.projectiles) if (pr.alive !== false) drawProjectile(g, pr, time);
+  for (const it of game.pickups || []) drawPickup(g, it);
   // 궁극기(회전 채찍차기) 중에는 대전과 같은 그림으로 그린다
   if (p) { if (p.kick && p.kick.ult) duel.draw(g, p, time); else hero.draw(g, game, time); }
   col.draw(g, true);

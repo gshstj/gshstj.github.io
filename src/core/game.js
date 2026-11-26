@@ -16,7 +16,9 @@ export function createGame() {
     enemies: [],         // enemies 담당. 쓰러진 적도 alive=false로 남아 있다.
     projectiles: [],     // enemies 담당. { x, y, vx, vy, w, h, damage, parryable, reflected, alive, type }
 
-    stageIndex: 0,       // stages 담당
+    pickups: [],         // stages 담당. 바닥에 떨어진 아이템 { type: 'heal', x, y, heal, age, life }
+
+    stageIndex: 0,      // stages 담당
     stage: null,         // 현재 스테이지 데이터 { id, name, width, bg, waves, ... }
     waveIndex: 0,
   };
