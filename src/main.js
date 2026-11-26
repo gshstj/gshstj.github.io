@@ -8,6 +8,7 @@ import { updateStage } from './stages/index.js';
 import * as fx from './fx/index.js';
 import * as ui from './ui/index.js';
 import * as pvp from './pvp/index.js';
+import { initTouch } from './core/touch.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -28,6 +29,7 @@ const game = createGame();
 window.game = game; // 디버깅용
 game.player = createPlayer(game);
 input.init();
+initTouch(game); // 모바일 터치 조작 (스토리 모드 전용)
 fx.init(game);
 ui.init(game); // 첫 장면을 정하고 스테이지를 시작한다
 
