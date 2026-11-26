@@ -58,7 +58,7 @@ export function drawTitle(ctx, t, character = 'blue', charFlash = 0) {
   rich(ctx, '[C] 캐릭터', 38, 233, { size: 11, color: '#e8e8f0' });
   text(ctx, '파란 바지', 108, 233, { size: 11, bold: !red, color: !red ? '#7ab0ff' : '#5a5a70' });
   text(ctx, '/', 158, 233, { size: 11, color: '#5a5a70' });
-  text(ctx, '빨간 치마', 168, 233, { size: 11, bold: red, color: red ? '#ff7a7a' : '#5a5a70' });
+  text(ctx, '빨간 바지 (카포에라)', 168, 233, { size: 11, bold: red, color: red ? '#ff7a7a' : '#5a5a70' });
   if (charFlash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.5, charFlash)})`;
     ctx.fillRect(300, 60, 150, 156);

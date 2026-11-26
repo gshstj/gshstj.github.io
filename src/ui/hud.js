@@ -23,7 +23,7 @@ export const KICK_LEVELS = [
 // 콤보 칸에 적는 기술 이름. 캐릭터마다 킥이 달라서 이름도 다르다.
 const MOVE_LABELS = {
   blue: { calf: '카프', high: '하이', mid: '미들', axe: '찍기' },
-  red: { calf: '앞차기', high: '돌려', mid: '뒤돌려', axe: '뛰어돌려' },
+  red: { calf: '반달', high: '아르마다', mid: '콤파소', axe: '옆돌기' }, // 카포에라: 메이아 루아, 아르마다, 콤파소, 아우 킥
 };
 let MOVE_LABEL = MOVE_LABELS.blue;
 const DEFAULT_ORDER = ['calf', 'high', 'mid', 'axe'];

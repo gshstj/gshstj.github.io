@@ -30,12 +30,16 @@ const DARK = {
   },
 };
 
-// 빨간 바지를 골랐을 때의 "어둠의 나": 같은 몸(포니테일, 팔짱)을 어둡게 칠한다
+// 빨간 바지(카포에라)를 골랐을 때의 "어둠의 나": 같은 몸(머리띠, 맨발, 허리끈)을 어둡게 칠한다
 const DARK_RED = {
   ...HEROINE,
-  // 교복의 모양(깃, 리본, 치마, 포니테일)은 그대로 두고 색만 어둡게 한다. 리본과 치마만 붉다.
-  colors: { ...DARK.colors, skin: '#3a3350', skinD: '#2a2440', topL: '#272042', stripe: null, skirt: '#7a1630', skirtD: '#3a0c1c', skirtL: '#b0203a' },
-  head: { ...HEROINE.head, rows: HEROINE.head.rows.slice(), pal: { ...DARK.head.pal, b: '#3a3350' } },
+  colors: {
+    ...DARK.colors, skin: '#3a3350', skinD: '#2a2440', topL: '#272042',
+    arm: '#3a3350', armFar: '#2a2440', armShadow: '#1a1630',
+    shoe: '#3a3350', shoeFar: '#2a2440', sole: '#2a2440', soleFar: '#1a1630',
+    stripe: '#b0203a', cord: '#b0203a', band: '#7a1fd0',
+  },
+  head: { ...HEROINE.head, rows: HEROINE.head.rows.slice(), pal: DARK.head.pal },
 };
 
 // 주인공 리그로 그리는 적: 어둠의 주인공 둘(고른 캐릭터의 어두운 모습), 그리고 1세대 발 마스터(프롤로그의 선배)

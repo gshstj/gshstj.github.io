@@ -1,6 +1,6 @@
 // 2인 대전의 두 파이터 그림. 둘 다 주인공과 같은 몸이고 바지 색만 다르다 (1P 파랑, 2P 빨강).
 // 주인공 그림(hero.js)은 한 명만 기억하는 방식이라, 여기서는 파이터의 상태만 보고 그때그때 자세를 계산한다.
-import { HERO, HEROINE, kickDefFor, specFor, spinOf } from './hero.js';
+import { HERO, HEROINE, kickDefFor, specFor, spinOf, sweepRing } from './hero.js';
 import { drawChar, mixPose } from './rig.js';
 import { clamp, lerp, smooth, easeOut, pathAt, mixPt, line } from './pix.js';
 
@@ -202,10 +202,13 @@ export function draw(g, f, time) {
     }
   }
   // 돌려 차는 킥(빨간 바지): 발이 나가기 전에는 등을 돌린 모습, 뛰어 차는 킥은 몸을 띄운다
-  let turned = false, hop = 0;
+  let sp = { turned: false, hop: 0, dash: 0, rot: 0, u: 1 };
   if (f.state === 'kick' && k.move) {
     const def = kickDef(k.move);
-    ({ turned, hop } = spinOf(def, motionT(k, def)));
+    sp = spinOf(def, motionT(k, def));
+    const kx0 = x + fc * Math.round(sp.dash), ky0 = y - Math.round(sp.hop);
+    if ((def.spin || def.roll) && sp.u < 1) sweepRing(g, kx0, ky0 - 14, sp.u, '#ffd0e0');
+    if (sp.rot) { o.rot = sp.rot; o.pivotY = -15; }
   }
-  drawChar(g, S, P, x, y - Math.round(hop), turned ? -fc : fc, o);
+  drawChar(g, S, P, x + fc * Math.round(sp.dash), y - Math.round(sp.hop), sp.turned ? -fc : fc, o);
 }

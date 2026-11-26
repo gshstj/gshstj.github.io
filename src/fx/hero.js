@@ -89,128 +89,96 @@ const KICKS = {
   },
 };
 
-// ── 두 번째 주인공: 빨간 바지 (여) ──
-// 파란 바지가 꼿꼿이 서서 다리만 쓰는 것과 달리, 몸을 돌리고 뛰면서 찬다. 손은 쓰지 않고 팔짱을 낀다.
+// ── 두 번째 주인공: 빨간 바지 (카포에라) ──
+// 파란 바지가 꼿꼿이 서서 다리만 쓰는 것과 정반대다. 징가 스텝으로 쉬지 않고 흔들리고, 돌고, 땅을 짚고, 공중제비를 돈다.
+// 손으로는 때리지 않는다 (땅을 짚거나 균형을 잡을 뿐이다).
 // 기술 id(calf, high, mid, axe, fly)와 수치는 파란 바지와 같고 모션만 다르다. 그래서 전투 로직은 캐릭터를 몰라도 된다.
-export const HEROINE = {
+// 이 게임만의 캐릭터다: 민소매에 초록 머리띠, 짧게 땋은 머리, 맨발, 허리에 노란 끈.
+export const CAPO = {
   ...HERO,
-  arms: 'free', upperArm: 5, foreArm: 5, armW: 3, fist: 3,
-  // 팔짱: 두 손을 가슴 앞에서 엇갈려 둔다
+  arms: 'free', upperArm: 6, foreArm: 6, armW: 3, fist: 3,
+  legW: 4, // 통 넓은 바지
+  // 징가 자세: 한 팔은 얼굴 앞, 한 팔은 뒤로 뺀다. 땅을 짚는 기술에서는 두 손이 바닥에 간다.
   handPose(P, S) {
     const sx = P.hip[0] + (P.lean || 0), sy = P.hip[1] - S.torsoH + (P.sh || 0);
-    return { nearHand: [sx + 4, sy + 6], farHand: [sx + 5, sy + 7] };
+    if (P.hands === 'floor') return { nearHand: [P.hip[0] + 10, -1], farHand: [P.hip[0] + 5, -1], stretchArm: true };
+    return { nearHand: [sx + 7, sy + 4], farHand: [sx - 5, sy + 9] };
   },
-  // 교복: 남색 블레이저, 흰 깃과 붉은 리본, 붉은 체크 치마, 검은 스타킹, 갈색 구두
   colors: {
-    skin: '#fbd9bd', skinD: '#dcae90',
-    top: '#2f3b6e', topD: '#1f2748', topL: '#4a5890', arm: '#2f3b6e', armFar: '#1c2342', armShadow: '#161c36',
-    pants: '#2c2c3c', pantsFar: '#1c1c28', stripe: null,
-    shoe: '#6a4028', shoeFar: '#462a1a', sole: '#2a1a12', soleFar: '#1c120c',
-    skirt: '#c8323c', skirtD: '#8f1f2a', skirtL: '#f2a8a8',
+    skin: '#d9a070', skinD: '#b07c50',
+    top: '#1c1c26', topD: '#101018', topL: '#34344a', arm: '#d9a070', armFar: '#b07c50', armShadow: '#8f6240',
+    pants: '#d8283c', pantsFar: '#8f1a2a', stripe: '#ffffff',
+    shoe: '#d9a070', shoeFar: '#b07c50', sole: '#b07c50', soleFar: '#8f6240', // 맨발
+    cord: '#ffd84d', band: '#3ac870',
   },
   head: {
-    ox: -3, oy: 1,
-    unit: 0.5,
-    // h 머리 / H 머리 윤기 / s 살 / d 그늘 / k 눈 / w 눈의 빛 / b 볼 / m 입
-    pal: { h: '#3a2030', H: '#8a4a5a', s: '#fbd9bd', d: '#dcae90', k: '#3a2440', w: '#ffffff', b: '#f6a0a8', m: '#e0607a' },
-    rows: [
-      '.....hhhhhhh....',
-      '...hhhhHHhhhhh..',
-      '..hhhHHHhhhhhhh.',
-      '.hhhhHhhhhhhhhhh',
-      '.hhhhhhhhhhhhhhh',
-      'hhhhhhhhhhshhshh',
-      'hhhhhhhhsssssssh',
-      'hhhhhhhssssskkss',
-      'hhhhhhdssssswkks',
-      'hhhhhhdsssssskks',
-      '.hhhhddsssbbssss',
-      '.hhhhddssssssss.',
-      '..hhhdddsssmmss.',
-      '..hhh.dddsssss..',
-      '...hh..ddssss...',
-      '...h....dss.....',
-    ],
+    ...HERO.head, rows: HERO.head.rows.slice(), // rows를 복사해야 머리 그림 캐시가 따로 잡힌다
+    pal: { ...HERO.head.pal, h: '#16161e', H: '#3a3a52', s: '#d9a070', d: '#b07c50', e: '#8f6240', m: '#7a3a30' },
   },
-  // 높이 묶은 긴 포니테일과 붉은 리본. 몸이 기울면 반대로 흩날린다.
+  // 뒤통수의 짧게 땋은 머리 가닥과 머리띠 끝자락
   headBack(g, j, P, S) {
-    const C = (S || HEROINE).head.pal;
-    const sway = Math.round(-(P.lean || 0) * 0.8);
-    g.fillStyle = C.h;
-    g.fillRect(j.headX - 2, j.headY + 1, 3, 3);
-    g.fillRect(j.headX - 4 + sway, j.headY + 3, 3, 5);
-    g.fillRect(j.headX - 5 + sway * 2, j.headY + 7, 3, 5);
-    g.fillRect(j.headX - 5 + sway * 3, j.headY + 11, 2, 3);
-    g.fillStyle = C.H;
-    g.fillRect(j.headX - 3 + sway, j.headY + 4, 1, 4);
-    g.fillStyle = (S || HEROINE).colors.skirt; // 리본
-    g.fillRect(j.headX - 2, j.headY + 1, 2, 2);
-    g.fillRect(j.headX - 3, j.headY, 1, 1);
-    g.fillRect(j.headX - 3, j.headY + 3, 1, 1);
+    const C = (S || CAPO);
+    const sway = Math.round(-(P.lean || 0) * 0.6);
+    g.fillStyle = C.head.pal.h;
+    g.fillRect(j.headX - 2 + sway, j.headY + 3, 2, 4);
+    g.fillRect(j.headX - 3 + sway, j.headY + 5, 1, 3);
+    g.fillRect(j.headX - 1, j.headY + 6, 1, 3);
+    g.fillStyle = C.colors.band;
+    g.fillRect(j.headX - 3 + sway, j.headY + 2, 3, 1);
+    g.fillRect(j.headX - 4 + sway * 2, j.headY + 3, 2, 1);
   },
-  // 흰 깃과 붉은 리본, 블레이저 단추
+  // 허리에 두른 노란 끈
   torsoExtra(g, j, P, S) {
-    const C = (S || HEROINE).colors;
-    g.fillStyle = '#f4f4fa';
-    g.fillRect(j.sx, j.sy, 4, 2);
-    g.fillRect(j.sx + 2, j.sy + 2, 2, 1);
-    g.fillStyle = C.skirt;
-    g.fillRect(j.sx + 2, j.sy + 2, 2, 2);
-    g.fillRect(j.sx + 3, j.sy + 4, 1, 2);
-    g.fillStyle = '#e8c860';
-    g.fillRect(j.sx + 3, j.sy + 7, 1, 1);
+    const C = (S || CAPO);
+    g.fillStyle = C.colors.cord;
+    g.fillRect(j.hx - C.bw, j.hy - 1, C.bw + C.fw + 1, 1);
+    g.fillRect(j.hx + 2, j.hy, 1, 4);
   },
-  // 체크 치마: 허리에서 아래로 퍼진다. 다리를 다 그린 뒤 맨 위에 덮는다.
+  // 이마를 두른 머리띠 (머리 그림 위에 덧그린다)
   extra(g, j, P, S) {
-    const C = (S || HEROINE).colors;
-    const sp = (S || HEROINE);
-    for (let i = 0; i < 6; i++) {
-      const x0 = j.hx - sp.bw - Math.floor(i * 0.5), x1 = j.hx + sp.fw + 1 + Math.ceil(i * 0.7);
-      g.fillStyle = i === 5 ? C.skirtD : C.skirt;
-      g.fillRect(x0, j.hy - 1 + i, x1 - x0, 1);
-      if (i === 2) { g.fillStyle = C.skirtL; g.fillRect(x0, j.hy - 1 + i, x1 - x0, 0.5); } // 가로 체크 줄
-    }
-    g.fillStyle = C.skirtD; // 세로 주름
-    g.fillRect(j.hx - 1, j.hy, 0.5, 5);
-    g.fillRect(j.hx + 2, j.hy, 0.5, 5);
+    g.fillStyle = (S || CAPO).colors.band;
+    g.fillRect(j.headX + 0.5, j.headY + 2.5, 7, 1);
   },
 };
+export const HEROINE = CAPO; // 예전 이름. 다른 파일이 이 이름으로 가져다 쓴다.
 
-// 빨간 바지의 킥. spin: 발이 닿기 전 이 비율까지는 등을 돌린 모습으로 그린다 (몸을 돌려 차는 느낌).
-// hop: 차는 동안 몸이 뜨는 높이.
+// 빨간 바지의 킥 (카포에라). 매 타마다 뛰고 돌고 파고든다.
+//   spin: 발이 닿기 전 이 비율까지는 등을 돌린 모습으로 그린다 (몸을 돌려 차는 느낌)
+//   hop: 차는 동안 몸이 뜨는 높이 / dash: 차는 동안 몸이 앞으로 쏠리는 거리 (그림만. 판정 위치는 그대로)
+//   roll: 발이 닿기까지 공중에서 몸이 도는 횟수 (옆돌기, 공중제비) / hands: 'floor'면 두 손으로 땅을 짚는다
 const KICKS_RED = {
-  // 1타 스냅 앞차기: 무릎을 접어 올렸다가 낮게 톡 찬다
+  // 1타 메이아 루아: 징가에서 뛰어들며 다리로 반달을 그려 낮게 후려친다
   calf: {
-    leg: 'near', swing: [0.014, 0.046], impact: 0.046, retract: 0.12, hip: [1, -1], lean: -1,
-    keys: [[0, 2, 0], [0.016, 6, -11], [0.03, 13, -9], [0.046, 21, -6], [0.09, 19, -6]],
+    leg: 'near', swing: [0.014, 0.046], impact: 0.046, retract: 0.12, hip: [1, 0], lean: -2, hop: 4, dash: 4,
+    keys: [[0, 2, 0], [0.016, 11, -15], [0.03, 19, -12], [0.046, 22, -5], [0.09, 20, -5]],
   },
-  // 2타 돌려차기: 반 바퀴 돌며 옆구리 높이로 휘두른다
+  // 2타 아르마다: 등을 돌려 한 바퀴 돌며 머리 높이로 휘두른다
   high: {
-    leg: 'far', swing: [0.014, 0.046], impact: 0.046, retract: 0.15, hip: [2, -1], lean: -3, spin: 0.5,
-    keys: [[0, -2, 0], [0.014, -7, -8], [0.03, 5, -22], [0.046, 20, -28], [0.09, 18, -27]],
+    leg: 'far', swing: [0.014, 0.046], impact: 0.046, retract: 0.15, hip: [2, -1], lean: -4, spin: 0.55, hop: 7, dash: 3,
+    keys: [[0, -2, 0], [0.014, -8, -10], [0.03, 5, -26], [0.046, 21, -31], [0.09, 19, -29]],
   },
-  // 3타 뒤돌려차기: 등을 보이며 한 바퀴 돌아 뒤꿈치로 길게 찬다
+  // 3타 콤파소: 두 손으로 땅을 짚고 몸을 낮게 숙인 채, 뒤꿈치를 컴퍼스처럼 크게 돌려 찬다
   mid: {
-    leg: 'near', swing: [0.014, 0.046], impact: 0.046, retract: 0.14, hip: [3, 0], lean: -4, spin: 0.72,
-    keys: [[0, 2, 0], [0.014, -9, -9], [0.03, 0, -19], [0.046, 24, -18], [0.09, 22, -18]],
+    leg: 'near', swing: [0.014, 0.046], impact: 0.046, retract: 0.16, hip: [2, 5], lean: 9, spin: 0.6, dash: 5, hands: 'floor',
+    keys: [[0, 2, 0], [0.014, -11, -6], [0.03, -4, -24], [0.046, 24, -23], [0.09, 22, -22]],
   },
-  // 4타 뛰어 돌려차기: 살짝 뛰어올라 공중에서 크게 돌려 찬다 (마무리)
+  // 4타 아우 킥: 높이 뛰어 옆돌기를 한 바퀴 돌면서 내려찍는다 (마무리)
   axe: {
-    leg: 'far', swing: [0.03, 0.08], impact: 0.07, syncAt: 0.04, retract: 0.2, hip: [2, -1], lean: -3, big: true, spin: 0.6, hop: 10,
-    keys: [[0, -2, 0], [0.02, -7, -10], [0.04, 3, -25], [0.056, 14, -31], [0.07, 22, -24], [0.09, 20, -18], [0.11, 18, -6]],
-    retractMid: [9, -6],
+    leg: 'far', swing: [0.03, 0.08], impact: 0.07, syncAt: 0.04, retract: 0.2, hip: [2, -1], lean: -3, big: true, hop: 20, roll: 1, dash: 7,
+    keys: [[0, -2, -6], [0.02, -6, -12], [0.04, 4, -26], [0.056, 15, -32], [0.07, 23, -22], [0.09, 21, -16], [0.11, 18, -4]],
+    retractMid: [9, -8],
   },
-  // 날아차기: 공중에서 한 바퀴 돌아 찬다
+  // 날아차기: 공중제비를 한 바퀴 돌고 발을 내뻗는다
   fly: {
-    leg: 'near', swing: [0, 0.03], impact: 0.03, retract: 0.14, hip: [1, 0], lean: -3, big: true, spin: 0.5,
-    keys: [[0, -6, -6], [0.03, 19, -9], [3, 19, -9]],
+    leg: 'near', swing: [0, 0.03], impact: 0.03, retract: 0.14, hip: [1, 0], lean: -3, big: true, roll: 1,
+    keys: [[0, -4, -8], [0.03, 20, -9], [3, 20, -9]],
   },
 };
 
-// 캐릭터: 'blue'(파란 바지, 남) | 'red'(빨간 바지, 여). game.character로 고른다.
+// 캐릭터: 'blue'(파란 바지. 서서 찬다) | 'red'(빨간 바지. 카포에라). game.character로 고른다.
 const CHARS = {
   blue: { spec: HERO, kicks: KICKS },
-  red: { spec: HEROINE, kicks: KICKS_RED },
+  red: { spec: CAPO, kicks: KICKS_RED },
 };
 let active = 'blue';
 export const setCharacter = (id) => { active = CHARS[id] ? id : 'blue'; };
@@ -220,11 +188,30 @@ export const specFor = (id) => (CHARS[id] || CHARS[active]).spec;
 export const kickDefFor = (id, move) => { const C = CHARS[id] || CHARS[active]; return C.kicks[move] || KICKS[move] || C.kicks.calf; };
 export const kickDef = (move) => kickDefFor(active, move);
 
-// 돌려 차는 킥을 그릴 때: 등을 돌린 구간인지, 얼마나 떠 있는지
+// 뛰고 도는 킥을 그릴 때 필요한 값: 등을 돌렸는지, 얼마나 떴는지, 얼마나 쏠렸는지, 몸이 돈 각도
 export function spinOf(def, T) {
-  const turned = !!def.spin && T < def.impact * def.spin;
-  const hop = def.hop ? def.hop * Math.sin(Math.PI * clamp(T / (def.impact * 1.7))) : 0;
-  return { turned, hop };
+  const u = clamp(T / def.impact);                               // 0..1 발이 닿기까지의 진행
+  const air = Math.sin(Math.PI * clamp(T / (def.impact * 1.7))); // 떴다가 내려오는 곡선
+  return {
+    turned: !!def.spin && T < def.impact * def.spin,
+    hop: def.hop ? def.hop * air : 0,
+    dash: def.dash ? def.dash * air : 0,
+    rot: def.roll && u < 1 ? -Math.PI * 2 * def.roll * u : 0,
+    u,
+  };
+}
+
+// 몸을 감아 도는 회오리 궤적. 도는 킥을 차는 동안 허리 높이에서 한 바퀴 넘게 휘감긴다.
+export function sweepRing(g, cx, cy, u, color) {
+  const head = u * Math.PI * 2.4, R = 20;
+  for (let i = 0; i < 16; i++) {
+    const a = head - i * 0.17;
+    if (a < 0) break;
+    g.globalAlpha = Math.max(0.1, 0.95 - i * 0.055);
+    g.fillStyle = i < 3 ? '#ffffff' : color;
+    g.fillRect(Math.round(cx + Math.cos(a) * R), Math.round(cy + Math.sin(a) * R * 0.34), 2, i < 6 ? 2 : 1);
+  }
+  g.globalAlpha = 1;
 }
 export const KICK_MOVES = Object.keys(KICKS);
 
@@ -297,6 +284,7 @@ function poseFor(p, time) {
       const T = st.kickT;
       const f = pathAt(def.keys, T);
       const b = smooth(clamp(T / 0.03));
+      if (def.hands) P.hands = def.hands;
       P.hip = [def.hip[0] * b, -15 + def.hip[1] * b];
       P.lean = lerp(1, def.lean, b);
       const sup = smooth(clamp(T / 0.05));
@@ -326,6 +314,16 @@ function poseFor(p, time) {
       break;
     }
     default:
+      if (active === 'red') {
+        // 징가: 좌우로 흔들리며 발을 번갈아 뒤로 뺀다. 가만히 서 있는 법이 없다.
+        const g = Math.sin(time * 5.2);
+        P.hip = [g * 2.5, -14 + Math.abs(g) * 1.5];
+        P.lean = 1 + g * 2;
+        P.near = [3 + Math.max(0, -g) * -9, 0];
+        P.far = [-3 + Math.max(0, g) * -6, 0];
+        P.head = [0, 0];
+        break;
+      }
       // idle: 숨쉬기 (어깨가 1px 오르내린다)
       P.sh = Math.sin(time * 2.6) > 0.2 ? 0 : 1;
       P.head = [0, 0];
@@ -541,17 +539,12 @@ export function draw(g, game, time) {
     o.rot = -fall * fall * Math.PI / 2;
     o.pivotY = -6 * fall;
   }
-  // 돌려 차는 킥: 발이 나가기 전에는 등을 돌린 모습으로, 뛰어 차는 킥은 몸을 띄워 그린다
-  const sp = kicking ? spinOf(def, T) : { turned: false, hop: 0 };
-  if (sp.turned) {
-    // 몸을 감아 도는 회전선
-    g.fillStyle = '#ffffff';
-    for (let i = 0; i < 4; i++) {
-      const a = time * 40 + i * 1.6;
-      g.fillRect(Math.round(x + Math.cos(a) * 9), Math.round(y - 20 + i * 4 - sp.hop), 2, 1);
-    }
-  }
-  drawChar(g, SP, P, x, y - Math.round(sp.hop), sp.turned ? -fc : fc, o);
+  // 뛰고 도는 킥: 몸을 띄우고, 앞으로 쏠리고, 등을 돌리거나 공중에서 돈다. 허리 둘레로 회오리 궤적이 감긴다.
+  const sp = kicking ? spinOf(def, T) : { turned: false, hop: 0, dash: 0, rot: 0, u: 1 };
+  const kx = x + fc * Math.round(sp.dash), ky = y - Math.round(sp.hop);
+  if (kicking && (def.spin || def.roll) && sp.u < 1) sweepRing(g, kx, ky - 14, sp.u, (L.arc && L.arc.mid) || '#ffd0e0');
+  if (sp.rot) { o.rot = sp.rot; o.pivotY = -15; }
+  drawChar(g, SP, P, kx, ky, sp.turned ? -fc : fc, o);
 
   if (trailOn && st.leg === 'near') local(() => drawArc(g, def, T, lv));
 
