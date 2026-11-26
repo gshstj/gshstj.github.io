@@ -7,6 +7,7 @@ import { updateEnemies } from './enemies/index.js';
 import { updateStage } from './stages/index.js';
 import * as fx from './fx/index.js';
 import * as ui from './ui/index.js';
+import * as pvp from './pvp/index.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -32,15 +33,20 @@ ui.init(game); // 첫 장면을 정하고 스테이지를 시작한다
 
 function step(dt) {
   ui.update(game, dt); // 장면 전환, 메뉴 (실제 시간)
-  if (game.scene === 'playing' && !game.paused) {
+  const story = game.scene === 'playing', versus = game.scene === 'pvp';
+  if ((story || versus) && !game.paused) {
     if (game.hitstop > 0) {
       game.hitstop -= dt;
     } else {
       const sdt = dt * game.timeScale;
       game.time += sdt;
-      updatePlayer(game, sdt);
-      updateEnemies(game, sdt);
-      updateStage(game, sdt);
+      if (versus) {
+        pvp.update(game, sdt); // 2인 대전
+      } else {
+        updatePlayer(game, sdt);
+        updateEnemies(game, sdt);
+        updateStage(game, sdt);
+      }
     }
   }
   fx.update(game, dt); // 카메라, 파티클 (실제 시간)

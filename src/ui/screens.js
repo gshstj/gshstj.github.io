@@ -50,7 +50,8 @@ export function drawTitle(ctx, t) {
   text(ctx, '카프킥', 36, 92, { size: 44, bold: true, color: '#f4f4fa' });
   text(ctx, '마스터', 36, 140, { size: 44, bold: true, color: '#ffd84d' });
   text(ctx, '주머니에서 손은 빼지 않는다. 발 하나로 일짱까지.', 38, 162, { size: 11, color: '#b8b8c8' });
-  if (blink(t)) rich(ctx, '[Enter] 시작', 38, 196, { size: 12, color: '#ffffff' });
+  if (blink(t)) rich(ctx, '[Enter] 스토리 시작', 38, 188, { size: 12, color: '#ffffff' });
+  rich(ctx, '[V] 2인 대전 (한 키보드로 둘이)', 38, 206, { size: 11, color: '#c8d4ff' });
   rich(ctx, '[A][D] 이동  [W] 점프  [J] 견제  [K] 킥  [Esc] 일시정지', W / 2, 254, { size: 10, align: 'center', color: '#9a9ab0' });
 }
 

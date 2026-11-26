@@ -10,6 +10,7 @@ import { STAGES, startStage, stageProgress } from '../stages/index.js';
 import { SEV } from '../stages/events.js';
 import { T } from './tuning.js';
 import { initHud, updateHud, drawHud } from './hud.js';
+import { startMatch, rematch, drawHud as drawPvpHud } from '../pvp/index.js';
 import { enterPrologue, updatePrologue, drawPrologue } from './prologue.js';
 import { drawTitle, drawPause, drawGameOver, drawStageClear, drawEnding, PAUSE_COUNT } from './screens.js';
 
@@ -104,6 +105,13 @@ export function update(game, dt) {
   switch (game.scene) {
     case 'title':
       if (canInput && pressed('confirm')) transition(() => { enterPrologue(); setScene(game, 'prologue'); });
+      else if (canInput && pressed('versus')) transition(() => { game.paused = false; startMatch(game); setScene(game, 'pvp'); });
+      break;
+
+    case 'pvp':
+      // 2인 대전: 진행은 src/pvp가 맡고, 여기서는 나가기와 다시 붙기만 받는다
+      if (canInput && pressed('pause')) transition(() => toTitle(game));
+      else if (canInput && game.pvp && game.pvp.phase === 'result' && pressed('confirm')) transition(() => rematch(game));
       break;
 
     case 'prologue':
@@ -164,6 +172,9 @@ export function draw(ctx, game) {
       break;
     case 'prologue':
       drawPrologue(ctx);
+      break;
+    case 'pvp':
+      drawPvpHud(ctx, game, S.sceneTime);
       break;
     case 'playing':
       drawHud(ctx, game);

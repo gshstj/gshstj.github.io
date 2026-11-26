@@ -88,7 +88,7 @@ function crack(x, size) {
 }
 
 // 킥 종류별 타격 방향 (라디안. +는 아래쪽)
-const HIT_ANGLE = { calf: 0.4, high: -0.55, mid: 0, axe: 1.25, rise: -1.35, fly: 0.35, brazil: 1.1 };
+const HIT_ANGLE = { calf: 0.4, high: -0.55, mid: 0, axe: 1.25, rise: -1.35, fly: 0.35, brazil: 1.1, whip: 0.15 };
 
 // ── 단계별 타격 이펙트 ──
 function levelHit(lv, x, y, dir, ang, crit, target) {
@@ -184,7 +184,8 @@ export function kickHit(game, d) {
   const target = d.target || null;
   const x = d.x ?? (target ? target.x : p ? p.x : W / 2);
   const y = d.y ?? (target ? target.y - 12 : GROUND_Y - 12);
-  const dir = (target && p ? Math.sign(target.x - p.x) : 0) || (p ? p.facing : 1) || 1;
+  // d.dir: 때린 방향을 직접 알려 준 경우 (2인 대전처럼 때린 쪽이 game.player가 아닐 때)
+  const dir = d.dir || (target && p ? Math.sign(target.x - p.x) : 0) || (p ? p.facing : 1) || 1;
   const ang = HIT_ANGLE[d.move] ?? 0.2;
   const crit = !!d.crit;
 

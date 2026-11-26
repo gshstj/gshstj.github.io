@@ -22,6 +22,7 @@ import * as backgrounds from './backgrounds.js';
 import { drawEnemy, drawTelegraph, drawProjectile, mem } from './enemySprites.js';
 import * as col from './col.js';
 import * as shadowBoss from './shadowBoss.js';
+import * as duel from './duel.js';
 
 import { sfx, init as initSfx } from './sfx.js';
 
@@ -85,6 +86,60 @@ export function init(game) {
   on(EV.ENEMY_DOWN, () => sfx.down());
   on(EV.KICK_LEVEL_UP, () => sfx.levelUp());
   on('fx:col', () => sfx.surge());
+
+  // 2인 대전: 같은 기술이 맞부딪히면 불꽃이 튀고 둥근 충격파가 터진다
+  on('pvp:clash', (d) => {
+    if (!d) return;
+    const { x, y } = d;
+    const HOT = ['#ffffff', '#fff6c8', '#ffd84d', '#ff8a2a', '#c8401a'];
+    particles.spawn({ type: 'star', x, y, size: 12, colors: HOT, life: 0.22, keep: true });
+    particles.spawn({ type: 'ring', x, y, r0: 3, r1: 30, colors: HOT, life: 0.28, thick: 3, keep: true });
+    particles.spawn({ type: 'ring', x, y, r0: 2, r1: 46, colors: ['#ffffff', '#ffd84d', '#ff8a2a'], life: 0.4, delay: 0.06, keep: true });
+    for (let i = 0; i < 26; i++) {
+      // 사방으로 튀는 불꽃. 위쪽으로 더 많이 튀고 바닥에서 튕긴다
+      const a = (i / 26) * 6.283 + Math.random() * 0.3;
+      const s = 120 + Math.random() * 260;
+      particles.spawn({ type: i % 3 ? 'px' : 'streak', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 60, g: 520, drag: 1.5,
+        life: 0.25 + Math.random() * 0.4, size: i % 5 === 0 ? 2 : 1, len: 0.05, colors: HOT, bounce: true, keep: i < 8 });
+    }
+    game.hitstop = Math.max(game.hitstop || 0, 0.12);
+    fxs.addShake(6);
+    fxs.punchZoom(0.1, x, y, 0.14);
+    fxs.screen.flash = Math.max(fxs.screen.flash, 0.5);
+    fxs.screen.flashColor = '#fff6c8';
+    sfx.parry();
+    sfx.block();
+  });
+
+  // 2인 대전: 가드로 막으면 쇳빛 불똥
+  on('pvp:block', (d) => {
+    if (!d) return;
+    const STEEL = ['#ffffff', '#a9c4e8', '#5a6e90'];
+    particles.spawn({ type: 'star', x: d.x, y: d.y, size: 6, colors: STEEL, life: 0.16, keep: true });
+    for (let i = 0; i < 6; i++) {
+      const a = Math.random() * 6.283;
+      particles.spawn({ type: 'px', x: d.x, y: d.y, vx: Math.cos(a) * 110, vy: Math.sin(a) * 110 - 30, g: 400, life: 0.2 + Math.random() * 0.15, size: 1, colors: STEEL });
+    }
+    game.hitstop = Math.max(game.hitstop || 0, 0.05);
+    fxs.addShake(2);
+    sfx.block();
+  });
+  // 2인 대전 궁극기: 쓰는 순간 화면이 어두워지고, 꽂히면 크게 터진다
+  on('pvp:ult', (d) => {
+    if (!d) return;
+    if (d.step === 'start') {
+      fxs.screen.dim = 0.7;
+      fxs.screen.dimHold = 0.45;
+      sfx.surge();
+      return;
+    }
+    fxs.slow(0.5, 0.3);
+    fxs.screen.flash = 1;
+    fxs.screen.flashColor = '#fff6c8';
+    fxs.addShake(99);
+    fxs.punchZoom(0.22, d.x, d.y, 0.4);
+    game.hitstop = Math.max(game.hitstop || 0, 0.22);
+  });
 
   // 친선전 피날레: 브라질리언 킥이 꽂히는 순간 화면이 멈추듯 느려진다
   on('friendly:finale', (d) => {
@@ -162,6 +217,18 @@ export function drawWorld(ctx, game) {
   fxs.drawDecals(g);
   fxs.drawPillar(g);
   col.draw(g, false);
+  // 2인 대전: 스토리의 주인공과 적 대신 두 파이터만 그린다
+  if (game.scene === 'pvp' && game.pvp) {
+    const fs = game.pvp.fighters;
+    for (const f of fs) shadow(g, f);
+    particles.draw(g, true);
+    for (const f of fs) if (!f.alive) duel.draw(g, f, time);
+    for (const f of fs) if (f.alive) duel.draw(g, f, time);
+    particles.draw(g, false);
+    g.restore();
+    finishWorld(ctx, g, game, camX);
+    return;
+  }
   const p = game.player;
   for (const e of game.enemies) if (e.alive !== false) shadow(g, e);
   if (p && p.alive !== false) shadow(g, p);
@@ -175,7 +242,11 @@ export function drawWorld(ctx, game) {
   particles.draw(g, false);
   for (const e of game.enemies) drawTelegraph(g, e, time);
   g.restore();
+  finishWorld(ctx, g, game, camX);
+}
 
+// 화면 전체 연출을 덮고 장면 버퍼를 화면에 찍는다
+function finishWorld(ctx, g, game, camX) {
   fxs.drawOverlays(g, game, time);
 
   // 장면 버퍼를 화면에 찍는다 (줌인은 타격 지점을 중심으로)
