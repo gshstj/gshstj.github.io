@@ -3,7 +3,7 @@
 import { EV, emit } from '../core/events.js';
 import { setState } from '../core/entity.js';
 import { GROUND_Y } from '../core/config.js';
-import { SHADOW, SHADOW2, MASTER } from './tuning.js';
+import { SHADOW, SHADOW2, MASTER, HEAVY } from './tuning.js';
 
 // 친선전 피날레를 알리는 이벤트. { enemy, step: 'call' | 'hit', x, y }
 const FINALE_EV = 'friendly:finale';
@@ -12,8 +12,7 @@ import { requestSlot, releaseSlot } from './director.js';
 
 function make(T) {
   function init(e) {
-    e.boss = true;
-    e.bossName = T.name;
+    if (T.boss) { e.boss = true; e.bossName = T.name; } // 중량형처럼 보스가 아닌 적도 이 틀을 쓴다
     e.ai = { step: 0, counter: false, hitDone: false, lungeSpeed: 0, next: -1, recoverTime: 0 };
   }
 
@@ -214,3 +213,4 @@ function make(T) {
 export const shadow = make(SHADOW);
 export const shadow2 = make(SHADOW2);
 export const master = make(MASTER);
+export const heavy = make(HEAVY); // 중량형 (점수 모드)

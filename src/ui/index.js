@@ -6,13 +6,14 @@
 import { W, H } from '../core/config.js';
 import { EV, on, emit } from '../core/events.js';
 import { pressed } from '../core/input.js';
-import { STAGES, startStage, stageProgress } from '../stages/index.js';
+import { STAGES, startStage, startEndless, stageProgress } from '../stages/index.js';
+import { initScore } from './score.js';
 import { SEV } from '../stages/events.js';
 import { T } from './tuning.js';
 import { initHud, updateHud, drawHud } from './hud.js';
 import { startMatch, rematch, drawHud as drawPvpHud } from '../pvp/index.js';
 import { enterPrologue, updatePrologue, drawPrologue } from './prologue.js';
-import { drawTitle, drawPause, drawGameOver, drawStageClear, drawEnding, PAUSE_COUNT } from './screens.js';
+import { drawTitle, drawPause, drawGameOver, drawScoreOver, drawStageClear, drawEnding, PAUSE_COUNT } from './screens.js';
 
 const newStats = () => ({ time: 0, hits: 0, parries: 0, retries: 0 });
 
@@ -40,6 +41,9 @@ function transition(fn) {
 
 // retry: 같은 스테이지 재도전 (체크포인트를 넘겼으면 거기서부터)
 function beginStage(game, index, retry = false) {
+  // 점수 모드에서의 재도전과 다시 시작은 항상 웨이브 1부터다
+  if (S.endless && game.stage && game.stage.endless) { beginEndless(game); return; }
+  S.endless = false;
   if (retry) S.stats.retries++;
   else S.stats = newStats();
   S.deathTimer = 0;
@@ -51,7 +55,21 @@ function beginStage(game, index, retry = false) {
   setScene(game, 'playing');
 }
 
+// 점수 모드(무한 골목)를 시작한다
+function beginEndless(game) {
+  S.endless = true;
+  S.stats = newStats();
+  S.deathTimer = 0;
+  S.clearTimer = 0;
+  S.finale = false;
+  S.endTimer = 0;
+  game.paused = false;
+  startEndless(game);
+  setScene(game, 'playing');
+}
+
 function toTitle(game) {
+  S.endless = false;
   game.paused = false;
   S.deathTimer = 0;
   S.clearTimer = 0;
@@ -60,6 +78,7 @@ function toTitle(game) {
 
 export function init(game) {
   initHud(game);
+  initScore(game);
   on(EV.PLAYER_DEAD, () => {
     // 친선전에서 브라질리언 킥을 맞고 쓰러졌으면 게임오버가 아니라 엔딩으로 간다
     if (game.scene === 'playing' && S.finale) { S.endTimer = 2.6; return; }
@@ -106,6 +125,7 @@ export function update(game, dt) {
     case 'title':
       if (canInput && pressed('confirm')) transition(() => { enterPrologue(); setScene(game, 'prologue'); });
       else if (canInput && pressed('versus')) transition(() => { game.paused = false; startMatch(game); setScene(game, 'pvp'); });
+      else if (canInput && pressed('endless')) transition(() => beginEndless(game));
       break;
 
     case 'pvp':
@@ -181,7 +201,8 @@ export function draw(ctx, game) {
       if (game.paused) drawPause(ctx, S.pauseSel);
       break;
     case 'gameOver':
-      drawGameOver(ctx, S.sceneTime, stageProgress(game).restartWave);
+      if (game.score) drawScoreOver(ctx, S.sceneTime, game.score);
+      else drawGameOver(ctx, S.sceneTime, stageProgress(game).restartWave);
       break;
     case 'stageClear': {
       const next = STAGES[game.stageIndex + 1];

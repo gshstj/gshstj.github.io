@@ -15,9 +15,9 @@ import { updateProjectiles } from './projectiles.js';
 import { brawler } from './brawler.js';
 import { shooter } from './shooter.js';
 import { speedster } from './speedster.js';
-import { shadow, shadow2, master } from './shadow.js';
+import { shadow, shadow2, master, heavy } from './shadow.js';
 
-const TYPES = { brawler, shooter, speedster, shadow, shadow2, master };
+const TYPES = { brawler, shooter, speedster, shadow, shadow2, master, heavy };
 
 export function spawnEnemy(game, type, x) {
   let def = TYPES[type];
@@ -53,7 +53,8 @@ function separate(game, dt) {
 
 export function updateEnemies(game, dt) {
   updateDirector(game, dt);
-  for (const e of game.enemies) stepEnemy(game, e, TYPES[e.type] || TYPES.brawler, dt);
+  // e.tempo: 점수 모드에서 웨이브가 오를수록 적이 빨라지는 배율 (없으면 1)
+  for (const e of game.enemies) stepEnemy(game, e, TYPES[e.type] || TYPES.brawler, dt * (e.tempo || 1));
   separate(game, dt);
   updateProjectiles(game, dt);
 }

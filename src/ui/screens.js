@@ -51,11 +51,28 @@ export function drawTitle(ctx, t) {
   text(ctx, '마스터', 36, 140, { size: 44, bold: true, color: '#ffd84d' });
   text(ctx, '주머니에서 손은 빼지 않는다. 발 하나로 일짱까지.', 38, 162, { size: 11, color: '#b8b8c8' });
   if (blink(t)) rich(ctx, '[Enter] 스토리 시작', 38, 188, { size: 12, color: '#ffffff' });
-  rich(ctx, '[V] 2인 대전 (한 키보드로 둘이)', 38, 206, { size: 11, color: '#c8d4ff' });
+  rich(ctx, '[B] 점수 모드 (끝없이 버티기)', 38, 204, { size: 11, color: '#ffe0a0' });
+  rich(ctx, '[V] 2인 대전 (한 키보드로 둘이)', 38, 220, { size: 11, color: '#c8d4ff' });
   rich(ctx, '[A][D] 이동  [W] 점프  [J] 견제  [K] 킥  [Esc] 일시정지', W / 2, 254, { size: 10, align: 'center', color: '#9a9ab0' });
 }
 
-const PAUSE_ITEMS = ['계속하기', '처음부터 다시', '타이틀로'];
+// 점수 모드에서 쓰러졌을 때: 점수와 최고 기록
+export function drawScoreOver(ctx, t, s) {
+  const a = fadeIn(t, 0.4);
+  ctx.fillStyle = `rgba(10,6,14,${0.8 * a})`;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = a;
+  text(ctx, '무한 골목', W / 2, 62, { size: 12, align: 'center', color: '#b8b8c8' });
+  text(ctx, String(s.score), W / 2, 104, { size: 36, bold: true, align: 'center', color: '#ffd84d' });
+  text(ctx, `웨이브 ${s.wave} · 쓰러뜨린 적 ${s.kills}`, W / 2, 126, { size: 11, align: 'center', color: '#eeeef4' });
+  if (s.newBest) text(ctx, '최고 기록 갱신!', W / 2, 148, { size: 14, bold: true, align: 'center', color: blink(t, 4) ? '#ffffff' : '#ff8a5a' });
+  else text(ctx, `최고 기록 ${s.best} (웨이브 ${s.bestWave})`, W / 2, 147, { size: 10, align: 'center', color: '#a8a8b8' });
+  rich(ctx, '[Enter] 다시 도전', W / 2, 178, { size: 12, align: 'center' });
+  rich(ctx, '[Esc] 타이틀로', W / 2, 198, { size: 10, align: 'center', color: '#a8a8b8' });
+  ctx.globalAlpha = 1;
+}
+
+const PAUSE_ITEMS =['계속하기', '처음부터 다시', '타이틀로'];
 export const PAUSE_COUNT = PAUSE_ITEMS.length;
 
 export function drawPause(ctx, sel) {

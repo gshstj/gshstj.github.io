@@ -111,6 +111,27 @@ export function init(game) {
     sfx.block();
   });
 
+  // 6단계부터: 킥이 등 뒤까지 휩쓴다. 뒤쪽으로도 바람이 인다.
+  on(EV.KICK_START, (d) => {
+    const p = game.player;
+    if (game.scene !== 'playing' || !p || !p.kick || p.kick.level < 6 || !d || d.move === 'whip' || d.move === 'rise') return;
+    const h = { calf: 6, high: 26, mid: 16, axe: 20 }[d.move] || 12;
+    for (let i = 0; i < 7; i++) {
+      particles.spawn({ type: 'streak', x: p.x - p.facing * 6, y: p.y - h + (Math.random() * 8 - 4), vx: -p.facing * (150 + Math.random() * 160), vy: Math.random() * 40 - 20,
+        drag: 5, life: 0.12 + Math.random() * 0.12, size: 1, len: 0.06, colors: ['#ffffff', '#ffd84d', '#ff9a1e'] });
+    }
+    particles.spawn({ type: 'star', x: p.x - p.facing * 24, y: p.y - h, size: 5, colors: ['#ffffff', '#ffd84d'], life: 0.14 });
+  });
+  // 7단계 궁극기(스토리, 점수 모드): 쓰는 순간 어두워지고, 후려치면 크게 터진다
+  on('kick:whip', (d) => {
+    if (!d) return;
+    if (d.step === 'start') { fxs.screen.dim = 0.7; fxs.screen.dimHold = 0.45; sfx.surge(); return; }
+    fxs.screen.flash = 1;
+    fxs.screen.flashColor = '#fff6c8';
+    fxs.addShake(99);
+    particles.spawn({ type: 'ring', x: d.x, y: d.y, r0: 4, r1: 60, colors: ['#ffffff', '#ffd84d', '#ff8a2a'], life: 0.35, thick: 3, keep: true });
+    if (d.any) { fxs.slow(0.4, 0.3); game.hitstop = Math.max(game.hitstop || 0, 0.2); }
+  });
   // 2인 대전: 가드로 막으면 쇳빛 불똥
   on('pvp:block', (d) => {
     if (!d) return;
@@ -237,7 +258,8 @@ export function drawWorld(ctx, game) {
   for (const e of game.enemies) if (e.alive === false) drawFoe(g, e, time);
   for (const e of game.enemies) if (e.alive !== false) drawFoe(g, e, time);
   for (const pr of game.projectiles) if (pr.alive !== false) drawProjectile(g, pr, time);
-  if (p) hero.draw(g, game, time);
+  // 궁극기(회전 채찍차기) 중에는 대전과 같은 그림으로 그린다
+  if (p) { if (p.kick && p.kick.ult) duel.draw(g, p, time); else hero.draw(g, game, time); }
   col.draw(g, true);
   particles.draw(g, false);
   for (const e of game.enemies) drawTelegraph(g, e, time);

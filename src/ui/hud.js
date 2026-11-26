@@ -16,6 +16,8 @@ export const KICK_LEVELS = [
   { name: '바람 가르는 발', color: '#7cc8ff' },
   { name: '번개 발', color: '#ffe45c' },
   { name: '마스터의 발', color: '#ffb52e' },
+  { name: '사방을 휩쓰는 발', color: '#ff7a3a' }, // 6단계: 킥이 앞뒤 양쪽을 맞힌다
+  { name: '채찍의 발', color: '#ff4a6a' },        // 7단계: 궁극기 회전 채찍차기
 ];
 
 const MOVE_LABEL = { calf: '카프', high: '하이', mid: '미들', axe: '찍기' };
@@ -57,7 +59,7 @@ export function initHud(game) {
     hud.moves.length = 0;
     pushBanner({
       title: stage.name,
-      sub: wave > 0 ? `체크포인트 · 웨이브 ${wave + 1}부터` : `STAGE ${index + 1}`,
+      sub: stage.endless ? '점수 모드 · 쓰러질 때까지' : wave > 0 ? `체크포인트 · 웨이브 ${wave + 1}부터` : `STAGE ${index + 1}`,
       big: true,
       dur: T.stageIntroTime,
     });
@@ -73,6 +75,7 @@ export function initHud(game) {
       pushBanner({ title: w.title || 'BOSS · 어둠의 나', sub: w.sub || (checkpoint ? '체크포인트! 쓰러져도 여기부터 다시' : '발차기만 쓰는 또 다른 나'), color: '#c08cff', dur: T.bannerTime + 1 });
       return;
     }
+    if (game.stage.endless) { pushBanner({ title: `웨이브 ${wave + 1}`, dur: T.bannerTime }); return; } // 끝이 없으니 "마지막"이 없다
     pushBanner({
       title: `웨이브 ${wave + 1} / ${count}`,
       sub: checkpoint ? '체크포인트! 쓰러져도 여기부터 다시' : wave === count - 1 ? '마지막 웨이브' : '',
@@ -157,7 +160,16 @@ function drawKickLevel(ctx, k) {
     ctx.fillStyle = i < k.level ? (flash ? '#ffffff' : lv.color) : '#33333f';
     ctx.fillRect(x, y, 6, 6);
   }
-  text(ctx, `카프킥 ${k.level}단계 · ${lv.name}`, 52, 29, { size: 10, bold: flash, color: flash ? '#ffffff' : lv.color });
+  text(ctx, `카프킥 ${k.level}단계 · ${lv.name}`, 12 + KICK_LEVELS.length * 8, 29, { size: 10, bold: flash, color: flash ? '#ffffff' : lv.color });
+  // 7단계: 궁극기 게이지. 다 차면 금색으로 깜빡인다
+  if (k.level >= 7 && k.meterMax > 0) {
+    const r = Math.max(0, Math.min(1, (k.meter || 0) / k.meterMax));
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(7, 37, 62, 5);
+    ctx.fillStyle = r >= 1 ? (Math.floor(hud.t * 8) % 2 ? '#ffd84d' : '#fff6c8') : '#b08a2a';
+    ctx.fillRect(8, 38, Math.round(60 * r), 3);
+    if (r >= 1) rich(ctx, '[J] 궁극기!', 74, 43, { size: 9, color: '#ffd84d' });
+  }
   // 다음 단계까지의 경험치 (A 담당의 kick.xp, kick.xpNext가 있을 때만. 최고 단계면 xpNext가 0)
   if (k.xpNext > 0) {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
@@ -169,7 +181,22 @@ function drawKickLevel(ctx, k) {
   }
 }
 
+// 점수 모드: 화면 위 가운데에 점수와 배율, 오른쪽에 웨이브와 최고 기록
+function drawScore(ctx, game) {
+  const s = game.score;
+  const pr = stageProgress(game);
+  text(ctx, String(s.score), W / 2, 15, { size: 14, bold: true, align: 'center', color: '#fff6c8' });
+  const hot = s.mult >= 3;
+  text(ctx, `x${s.mult.toFixed(2)}`, W / 2 + 46, 15, { size: 10, bold: true, color: s.mult > 1 ? (hot && Math.floor(hud.t * 8) % 2 ? '#ffffff' : '#ffb52e') : '#8a8aa0' });
+  if (s.gain && performance.now() - s.gainAt < 900) text(ctx, `+${s.gain}`, W / 2, 26, { size: 9, align: 'center', color: '#ffd84d' });
+  text(ctx, `무한 골목 · 웨이브 ${s.wave}`, W - 8, 15, { size: 10, bold: true, align: 'right', color: '#eeeef4' });
+  const info = pr.resting ? '다음 웨이브가 온다' : `남은 적 ${pr.remaining}`;
+  text(ctx, info, W - 8, 27, { size: 9, align: 'right', color: '#c8c8d8' });
+  text(ctx, `최고 ${Math.max(s.best, s.score)}`, W - 8, 39, { size: 9, align: 'right', color: '#8a8aa0' });
+}
+
 function drawStageInfo(ctx, game) {
+  if (game.score) { drawScore(ctx, game); return; }
   const pr = stageProgress(game);
   text(ctx, `STAGE ${game.stageIndex + 1} · ${game.stage.name}`, W - 8, 15, { size: 10, bold: true, align: 'right', color: '#eeeef4' });
   // 웨이브 칸: 지난 웨이브는 초록, 지금은 금색, 체크포인트 웨이브는 아래에 청록 줄
@@ -263,7 +290,7 @@ function drawBanner(ctx) {
 function drawBoss(ctx, game) {
   const b = game.enemies.find((e) => e.boss && e.alive);
   if (!b) return;
-  const w = 180, x = W / 2 - w / 2, y = 30;
+  const w = 180, x = W / 2 - w / 2, y = game.score ? 44 : 30; // 점수 모드에서는 점수 아래로 내린다
   const r = Math.max(0, Math.min(1, b.hp / b.maxHp));
   text(ctx, b.bossName || 'BOSS', W / 2, y - 3, { size: 10, bold: true, align: 'center', color: '#d8b8ff' });
   ctx.fillStyle = 'rgba(0,0,0,0.75)';

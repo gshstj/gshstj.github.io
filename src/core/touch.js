@@ -33,6 +33,7 @@ const CSS = `
 #tPause { right: 3vmin; top: 3vmin; width: 12vmin; height: 12vmin; font-size: 4vmin; }
 #tOk { left: 50%; bottom: 6vmin; width: 40vmin; height: 15vmin; margin-left: -20vmin; border-radius: 8vmin; font-size: 5vmin; }
 #tSkip { right: 3vmin; top: 3vmin; width: 26vmin; height: 11vmin; border-radius: 6vmin; font-size: 3.6vmin; }
+#tScore { left: 4vmin; bottom: 6vmin; width: 34vmin; height: 15vmin; border-radius: 8vmin; font-size: 4.4vmin; }
 #tTurn { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center;
   background: rgba(0,0,0,0.85); color: #fff; font-size: 5vmin; line-height: 1.6; }
 @media (orientation: portrait) { #touch.on #tTurn { display: flex; } }
@@ -52,6 +53,7 @@ export function initTouch(game) {
     <div class="tb" id="tPause"><div>Ⅱ</div></div>
     <div class="tb" id="tOk"><div>확인</div></div>
     <div class="tb" id="tSkip"><div>건너뛰기</div></div>
+    <div class="tb" id="tScore"><div>점수 모드</div></div>
     <div id="tTurn">화면을 가로로 돌려 주세요</div>`;
   document.body.appendChild(root);
   const $ = (id) => root.querySelector('#' + id);
@@ -79,6 +81,7 @@ export function initTouch(game) {
   holdBtn($('tOk'), 'Enter');
   holdBtn($('tPause'), 'Escape');
   holdBtn($('tSkip'), 'Escape');
+  holdBtn($('tScore'), 'KeyB'); // 타이틀에서 점수 모드로
 
   // 조이스틱: 좌우로 밀면 이동, 위로 밀면 점프
   const stick = $('tStick'), knob = $('tKnob');
@@ -130,6 +133,7 @@ export function initTouch(game) {
     show('tPause', playing);
     show('tOk', !fight && game.scene !== 'pvp');
     show('tSkip', game.scene === 'prologue');
+    show('tScore', game.scene === 'title');
     if (!fight) for (const c of ['KeyK', 'KeyW', 'KeyJ']) hold(c, false);
     if (!playing) endStick();
   }, 120);

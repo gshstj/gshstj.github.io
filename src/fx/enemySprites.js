@@ -153,6 +153,26 @@ const SPECS = {
   },
 };
 
+// 중량형: 격투형의 틀을 키운 거구. 어두운 풀색 점퍼에 굵은 팔다리.
+SPECS.heavy = {
+  ...SPECS.brawler,
+  hipY: -20, thigh: 9, shin: 10, legW: 6, torsoH: 18, bw: 8, fw: 7, upperArm: 8, foreArm: 7, armW: 6, fist: 6,
+  lean: 2, stance: 6, walkRate: 5, stride: 5,
+  guard: (sy) => ({ nearHand: [10, sy + 7], farHand: [12, sy + 9] }),
+  colors: {
+    skin: SKIN, skinD: SKIN_D, top: '#4c6a48', topD: '#2f4530', topL: '#6f9468', arm: '#4c6a48', armFar: '#2f4530',
+    pants: '#2e2c3a', pantsFar: '#201e2a', shoe: '#5a3a24', shoeFar: '#3c2618', sole: '#b09a80', soleFar: '#7a6a58',
+  },
+  head: { ...SPECS.brawler.head, rows: SPECS.brawler.head.rows.slice(), pal: { ...SPECS.brawler.head.pal, h: '#16161c' } },
+  torsoExtra(g, j) {
+    // 점퍼 지퍼와 허리띠
+    g.fillStyle = '#c8c8b0';
+    g.fillRect(j.sx + 3, j.sy + 2, 1, 12);
+    g.fillStyle = '#1c1a26';
+    g.fillRect(j.hx - 8, j.hy - 2, 16, 2);
+  },
+};
+
 export const ENEMY_TYPES = Object.keys(SPECS).filter((k) => k !== 'default');
 export const specOf = (type) => SPECS[type] || SPECS.default;
 export const heightOf = (e) => { const S = specOf(e.type); return -S.hipY + S.torsoH + S.head.rows.length * (S.head.unit || 1) - 1; };

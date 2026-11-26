@@ -178,6 +178,28 @@ export const MASTER = Object.assign({}, SHADOW, {
   finaleKnockback: 330,
 });
 
+// 중량형: 크고 느리고 단단하다. 점수 모드에서 나온다.
+// - 약한 타격으로는 멈칫하지 않는다 (2타째부터 버티고 받아친다). 패링 후 카운터, 콤보 마무리, 날아차기로 무너뜨린다.
+// - 내려치기는 패링할 수 없다. 예고가 아주 길어서 보고 물러나면 된다. 헛친 뒤의 빈틈이 크다.
+// - 밟기는 패링하거나 점프로 피한다.
+export const HEAVY = {
+  w: 22, h: 38, hp: 26,
+  speed: 30,
+  standoff: 56, attackRange: 26, chaseRange: 60, lungeTime: 0.14,
+  combo: [
+    { action: 'slam',  kind: 'high', height: 'high', windup: 0.72, active: 0.14, reach: 36, damage: 2,   knockback: 260, parryable: false, lunge: 8,  gap: 0.45 },
+    { action: 'stomp', kind: 'low',  height: 'low',  windup: 0.50, active: 0.12, reach: 34, damage: 1.5, knockback: 180, parryable: true,  lunge: 12, gap: 0 },
+  ],
+  recover: 1.0, abortRecover: 0.6,
+  cooldown: [1.2, 1.8], firstCooldown: [0.6, 1.0], afterHurtDelay: 0.4,
+  braceHits: 2,
+  counter: { action: 'brace', kind: 'low', height: 'low', windup: 0.5, active: 0.12, reach: 36, damage: 1.5, knockback: 200, parryable: true, lunge: 0, gap: 0 },
+  counterRecover: 0.8,
+  armorDamageMult: 0.35,
+  flinch: 0.1, critFlinch: 0.45, kbMult: 0.06, kbMultOpen: 0.03,
+  launchMult: 0.45, launchVy: 170, knockdown: 0.9, stun: 1.3,
+};
+
 // 공격 차례 조율
 export const DIRECTOR = {
   gap: 0.3,              // 한 적이 공격 차례를 받거나 끝낸 뒤, 다음 적이 차례를 받기까지의 간격

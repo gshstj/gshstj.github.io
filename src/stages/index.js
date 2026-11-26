@@ -8,6 +8,8 @@ import { spawnEnemy } from '../enemies/index.js';
 import { STAGES } from './data.js';
 import { SEV } from './events.js';
 import { T } from './tuning.js';
+import { T as PT } from '../player/tuning.js';
+import { makeEndlessStage, genWave } from './endless.js';
 
 export { STAGES };
 
@@ -37,7 +39,24 @@ function spawnX(game, s) {
 }
 
 function spawn(game, s) {
-  spawnEnemy(game, s.type, Math.round(spawnX(game, s)));
+  const e = spawnEnemy(game, s.type, Math.round(spawnX(game, s)));
+  // 점수 모드: 웨이브가 오를수록 적이 단단해지고 빨라진다
+  if (s.hpMult && s.hpMult !== 1) e.hp = e.maxHp = Math.round(e.maxHp * s.hpMult);
+  if (s.tempo) e.tempo = s.tempo;
+}
+
+// 점수 모드(무한 골목)를 시작한다. 카프킥 단계는 1부터 다시 키운다.
+export function startEndless(game) {
+  game.stageIndex = 0;
+  game.stage = makeEndlessStage();
+  game.enemies.length = 0;
+  game.projectiles.length = 0;
+  st.cleared = false;
+  st.restartWave = 0;
+  resetPlayer(game);
+  Object.assign(game.player.kick, { level: 1, xp: 0, xpNext: PT.level.xpNeed[1], meter: 0 });
+  emit(EV.STAGE_START, { index: 0, stage: game.stage, wave: 0, fromCheckpoint: false });
+  beginWave(game, 0);
 }
 
 function beginWave(game, wave) {
@@ -93,6 +112,10 @@ export function updateStage(game, dt) {
   }
   if (fighting) return;
 
+  // 점수 모드는 끝이 없다. 마지막 웨이브를 넘기면 다음 웨이브를 만들어 붙인다.
+  if (game.stage.endless && game.waveIndex >= game.stage.waves.length - 1) {
+    game.stage.waves.push(genWave(game.stage.waves.length));
+  }
   if (game.waveIndex < game.stage.waves.length - 1) {
     st.rest = T.waveRest;
   } else {

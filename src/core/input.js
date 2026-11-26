@@ -10,6 +10,7 @@ const KEYMAP = {
   confirm: ['Enter'],
   pause: ['Escape'],
   versus: ['KeyV'],      // 타이틀에서 2인 대전 시작
+  endless: ['KeyB'],     // 타이틀에서 점수 모드 시작
   aux: ['Backquote'],
 };
 

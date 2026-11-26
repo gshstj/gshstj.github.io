@@ -52,6 +52,7 @@ function newCtl() {
     xpGain: 0,                           // 아직 반영하지 않은 경험치
     rise: null,
     fly: null,                           // 날아차기 진행 상태 { hit, landed }
+    whip: null,                          // 궁극기 진행 상태 { done }
     airKicked: false,                    // 이번 점프에 이미 날아차기를 썼다
   };
 }
@@ -78,6 +79,9 @@ export function createPlayer(game) {
       connected: false,    // 이번 킥이 맞았거나 무언가를 쳐냈다
       parry: false,        // 이번 킥이 적의 공격을 쳐냈다 (이 킥은 데미지가 없다)
       comboTime: 0,        // 킥이 끝난 뒤 콤보가 이어질 수 있는 남은 시간
+      ult: false,          // 지금 궁극기(회전 채찍차기)를 쓰는 중이다. fx가 이 값으로 그림을 바꾼다
+      meter: 0,            // 궁극기 게이지 (7단계부터 찬다)
+      meterMax: T.whip.cost,
       xp: 0,               // 현재 단계에서 쌓은 경험치
       xpNext: T.level.xpNeed[1], // 다음 단계까지 필요한 경험치 (최고 단계면 0)
     },
@@ -109,13 +113,14 @@ export function resetPlayer(game) {
   p.ctl = newCtl();
   p.ctl.xpGain = xpGain;
   endCombo(p);
+  p.kick.ult = false;
   setState(p, 'idle');
 }
 
 // ---------------------------------------------------------------------------
 // 피격
 function takeHit(game, p, { damage = 1, knockback = 80, source = null } = {}) {
-  if (!p.alive || p.invuln > 0 || p.ctl.rise) return false;
+  if (!p.alive || p.invuln > 0 || p.ctl.rise || p.ctl.whip) return false;
   const k = p.kick, c = p.ctl;
   // 너무 일찍(또는 연타하다가) 찬 킥의 빈틈에 그 공격(또는 쳐낼 수 있던 투척물)을 맞았다
   const missedProjectile = source && source.kind !== 'enemy' && source.parryable;
@@ -225,12 +230,19 @@ function startKick(game, p, step, fresh, dir) {
 // 한 번에 여럿을 묶어 두지 못하므로, 한 명을 차는 동안 다른 적이 끼어든다.
 function resolveKickHits(game, p, m) {
   const k = p.kick, c = p.ctl;
-  if (c.hitList.length >= m.targets) return;
+  // 6단계부터는 등 뒤의 적도 함께 휩쓸고, 한 번에 맞는 수가 늘어난다
+  const wide = k.level >= T.wide.level;
+  const targets = m.targets + (wide ? T.wide.extraTargets : 0);
+  if (c.hitList.length >= targets) return;
+  const behind = (e) => {
+    const d = -frontDist(p, e);
+    return d > 0 && d <= T.wide.backRange + e.w / 2 && Math.abs(e.y - p.y) <= T.kick.vertReach;
+  };
   const inRange = game.enemies
-    .filter((e) => e.alive && !c.hitList.includes(e) && inReach(p, e, m.range))
-    .sort((a, b) => frontDist(p, a) - frontDist(p, b));
+    .filter((e) => e.alive && !c.hitList.includes(e) && (inReach(p, e, m.range) || (wide && behind(e))))
+    .sort((a, b) => Math.abs(frontDist(p, a)) - Math.abs(frontDist(p, b)));
   for (const e of inRange) {
-    if (c.hitList.length >= m.targets) break;
+    if (c.hitList.length >= targets) break;
     c.hitList.push(e);
     const counter = p.counterTime > 0;
     const finisher = !!m.finisher;
@@ -240,9 +252,10 @@ function resolveKickHits(game, p, m) {
     const knockback = m.knockback * (1 + T.level.knockbackBonus * lv) * (counter ? T.parry.counterKnockback : 1);
     e.takeHit({ damage, knockback, crit, source: p });
     k.connected = true;
+    gainMeter(p, damage);
     emit(EV.KICK_HIT, {
       target: e, move: m.move, foot: m.foot, step: k.step, finisher, crit, damage,
-      level: k.level, x: e.x, y: e.y - m.height, counter,
+      level: k.level, x: e.x, y: e.y - m.height, counter, dir: e.x >= p.x ? 1 : -1,
     });
   }
 }
@@ -359,6 +372,66 @@ function updateCol(game, p, dt) {
   }
   if (k.time >= k.strikeTime + k.recoverTime - EPS) {
     c.rise = null;
+    endCombo(p);
+    setState(p, 'idle');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 궁극기: 회전 채찍차기 (7단계). 준 데미지로 게이지가 차면 견제 키로 쓴다.
+// 몸을 지면과 수평으로 눕혀 돌다가 후려치며, 앞뒤의 적을 전부 휩쓴다. 쓰는 동안에는 맞지 않는다.
+const WHIP_EV = 'kick:whip'; // { step: 'start' | 'hit', x, y }
+
+function gainMeter(p, damage) {
+  const k = p.kick;
+  if (k.level >= T.whip.level) k.meter = Math.min(T.whip.cost, k.meter + damage);
+}
+
+const whipReady = (p) => p.kick.level >= T.whip.level && p.kick.meter >= T.whip.cost;
+
+function startWhip(game, p, dir) {
+  const k = p.kick, c = p.ctl, U = T.whip;
+  if (dir) p.facing = dir;
+  endCombo(p);
+  Object.assign(k, {
+    phase: 'strike', step: k.comboLength - 1, move: 'whip', foot: 'right',
+    time: 0, hitAt: U.startup, strikeTime: U.startup + U.active, recoverTime: U.recover, connected: true, ult: true, meter: 0,
+  });
+  c.kickBuf = c.punchBuf = c.jumpBuf = 0;
+  c.whip = { done: false };
+  p.state = 'kick';
+  p.stateTime = 0;
+  p.vx = 0;
+  emit(EV.KICK_START, { move: 'whip', foot: 'right', step: k.step, level: k.level });
+  emit(WHIP_EV, { step: 'start', x: p.x, y: p.y - 20 });
+}
+
+function updateWhip(game, p, dt) {
+  const k = p.kick, c = p.ctl, U = T.whip;
+  k.time += dt;
+  p.vx = 0;
+  if (!c.whip.done && k.time >= U.startup - EPS) {
+    c.whip.done = true;
+    let any = false;
+    for (const e of game.enemies) {
+      if (!e.alive || Math.abs(e.x - p.x) > U.radius + e.w / 2) continue;
+      any = true;
+      e.takeHit({ damage: U.damage, knockback: U.knockback, crit: true, source: p });
+      emit(EV.KICK_HIT, {
+        target: e, move: 'whip', foot: 'right', step: k.step, finisher: true, crit: true, damage: U.damage,
+        level: k.level, x: e.x, y: e.y - U.height, counter: false, dir: e.x >= p.x ? 1 : -1,
+      });
+    }
+    for (const pr of game.projectiles) if (pr.alive && Math.abs(pr.x - p.x) <= U.radius) pr.alive = false;
+    emit(WHIP_EV, { step: 'hit', x: p.x + p.facing * 24, y: p.y - U.height, any });
+  }
+  if (k.phase === 'strike' && k.time >= k.strikeTime - EPS) {
+    k.phase = 'recover';
+    setState(p, 'recover');
+  }
+  if (k.time >= k.strikeTime + k.recoverTime - EPS) {
+    c.whip = null;
+    k.ult = false;
     endCombo(p);
     setState(p, 'idle');
   }
@@ -554,9 +627,13 @@ export function updatePlayer(game, dt) {
 
     if (c.rise) {
       updateCol(game, p, dt);
+    } else if (c.whip) {
+      updateWhip(game, p, dt);
     } else if (c.fly) {
       updateFly(game, p, dt);
-    } else if (pressed('aux') && p.onGround && p.state !== 'hurt') {
+    } else if (inp.punch && whipReady(p) && p.onGround && p.state !== 'hurt' && k.phase === 'idle') {
+      startWhip(game, p, inp.dir); // 7단계에 게이지가 차면 견제 키가 궁극기가 된다
+    } else if (pressed('aux') && p.onGround && p.state !== 'hurt' && !(game.stage && game.stage.endless)) {
       startCol(game, p, inp.dir);
     } else if (p.state === 'hurt') {
       p.vx = approach(p.vx, 0, T.hurt.decel * dt);
