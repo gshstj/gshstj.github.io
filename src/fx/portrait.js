@@ -1,6 +1,6 @@
 // 전투 밖 화면(타이틀, 프롤로그, 엔딩)에서 게임 속 캐릭터를 같은 그림으로 크게 그린다.
 // ui가 가져다 쓴다. 전투 화면과 같은 리그(rig.js)를 쓰므로 주인공 그림이 바뀌면 여기도 같이 바뀐다.
-import { HERO, kickDef } from './hero.js';
+import { HERO, kickDefFor, specFor } from './hero.js';
 import { specOf } from './enemySprites.js';
 import { drawChar } from './rig.js';
 import { pathAt } from './pix.js';
@@ -25,11 +25,11 @@ export const SENIOR = {
   },
 };
 
-function heroPose(pose, t, move) {
+function heroPose(pose, t, move, char) {
   const P = { hip: [0, -15], lean: 1, sh: Math.sin(t * 2.6) > 0.2 ? 0 : 1, head: [0, 0], near: [2, 0], far: [-2, 0] };
   if (pose === 'kick') {
-    // 발이 닿는 순간의 자세
-    const def = kickDef(move || 'calf');
+    // 발이 닿는 순간의 자세 (캐릭터마다 킥 모양이 다르다)
+    const def = kickDefFor(char, move || 'calf');
     const f = pathAt(def.keys, def.impact);
     P.hip = [def.hip[0], -15 + def.hip[1]];
     P.lean = def.lean;
@@ -80,8 +80,9 @@ function brawlerPose(S, pose, t) {
 // scale은 정수로 준다 (픽셀이 고르게 커진다). x, y는 발 중앙.
 export function drawPortrait(ctx, x, y, o = {}) {
   const { who = 'hero', pose = 'stand', scale = 2, facing = 1, t = 0, dark = null, move = null } = o;
-  const S = who === 'brawler' ? specOf('brawler') : who === 'senior' ? SENIOR : HERO;
-  const P = who === 'brawler' ? brawlerPose(S, pose, t) : heroPose(pose, t, move);
+  // 'hero'는 고른 주인공의 모습으로 그린다. o.char로 캐릭터를 직접 줄 수도 있다 (선택 화면용)
+  const S = who === 'brawler' ? specOf('brawler') : who === 'senior' ? SENIOR : specFor(o.char);
+  const P = who === 'brawler' ? brawlerPose(S, pose, t) : heroPose(pose, t, move, who === 'senior' ? 'blue' : o.char);
   const opt = {};
   if (dark) opt.ghost = dark;
   // fall을 주면 그만큼만 넘어가고, 안 주면 'down' 자세는 완전히 누운 모습이다

@@ -57,6 +57,6 @@ export const PV = {
     { left: 'KeyA', right: 'KeyD', jump: 'KeyW', guard: 'KeyS', kick: 'KeyF' },                     // 1P 파란 바지
     { left: 'ArrowLeft', right: 'ArrowRight', jump: 'ArrowUp', guard: 'ArrowDown', kick: 'KeyK' },  // 2P 빨간 바지
   ],
-  names: ['파란 바지', '빨간 바지'],
+  names: ['파란 바지', '빨간 치마'],
   colors: ['#5a8cff', '#ff5a5a'],
 };

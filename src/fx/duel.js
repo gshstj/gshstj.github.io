@@ -1,19 +1,14 @@
 // 2인 대전의 두 파이터 그림. 둘 다 주인공과 같은 몸이고 바지 색만 다르다 (1P 파랑, 2P 빨강).
 // 주인공 그림(hero.js)은 한 명만 기억하는 방식이라, 여기서는 파이터의 상태만 보고 그때그때 자세를 계산한다.
-import { HERO, kickDef } from './hero.js';
+import { HERO, HEROINE, kickDefFor, specFor, spinOf } from './hero.js';
 import { drawChar, mixPose } from './rig.js';
 import { clamp, lerp, smooth, easeOut, pathAt, mixPt, line } from './pix.js';
 
-const BLUE = HERO; // 1P: 주인공 그대로 (파란 바지, 빨간 신발)
-const RED = {      // 2P: 빨간 바지, 파란 신발
-  ...HERO,
-  colors: {
-    ...HERO.colors,
-    pants: '#d23c3c', pantsFar: '#8f2424', stripe: '#f2f4fa',
-    shoe: '#3a6ae0', shoeFar: '#274696',
-  },
-};
-const specOf = (f) => (f.index === 1 ? RED : BLUE);
+// 1P는 파란 바지(남), 2P는 빨간 바지(여). 대전 파이터가 아닌 주인공(궁극기를 쓰는 스토리 주인공)은 고른 캐릭터를 따른다.
+const charOf = (f) => (f.index === 1 ? 'red' : f.index === 0 ? 'blue' : undefined);
+const specOf = (f) => (f.index === 1 ? HEROINE : f.index === 0 ? HERO : specFor());
+let cur = null; // 지금 그리는 파이터 (킥 모션을 캐릭터에 맞게 고르려고)
+const kickDef = (move) => kickDefFor(cur ? charOf(cur) : undefined, move);
 
 const stand = () => ({ hip: [0, -15], lean: 1, sh: 0, head: [0, 0], near: [2, 0], far: [-2, 0] });
 
@@ -169,6 +164,7 @@ function drawWhip(g, f, S, x, y, fc, o, time) {
 }
 
 export function draw(g, f, time) {
+  cur = f;
   const S = specOf(f);
   const k = f.kick;
   let x = Math.round(f.x);
@@ -205,5 +201,11 @@ export function draw(g, f, time) {
       drawChar(g, S, kickPose(def, Tg, k.move), x, y, fc, { ghost: i === 1 ? '#ffffff' : tint, alpha: 0.45 - i * 0.1 });
     }
   }
-  drawChar(g, S, P, x, y, fc, o);
+  // 돌려 차는 킥(빨간 바지): 발이 나가기 전에는 등을 돌린 모습, 뛰어 차는 킥은 몸을 띄운다
+  let turned = false, hop = 0;
+  if (f.state === 'kick' && k.move) {
+    const def = kickDef(k.move);
+    ({ turned, hop } = spinOf(def, motionT(k, def)));
+  }
+  drawChar(g, S, P, x, y - Math.round(hop), turned ? -fc : fc, o);
 }

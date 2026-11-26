@@ -20,7 +20,12 @@ export const KICK_LEVELS = [
   { name: '채찍의 발', color: '#ff4a6a' },        // 7단계: 궁극기 회전 채찍차기
 ];
 
-const MOVE_LABEL = { calf: '카프', high: '하이', mid: '미들', axe: '찍기' };
+// 콤보 칸에 적는 기술 이름. 캐릭터마다 킥이 달라서 이름도 다르다.
+const MOVE_LABELS = {
+  blue: { calf: '카프', high: '하이', mid: '미들', axe: '찍기' },
+  red: { calf: '앞차기', high: '돌려', mid: '뒤돌려', axe: '뛰어돌려' },
+};
+let MOVE_LABEL = MOVE_LABELS.blue;
 const DEFAULT_ORDER = ['calf', 'high', 'mid', 'axe'];
 
 const hud = {
@@ -306,6 +311,7 @@ function drawBoss(ctx, game) {
 export function drawHud(ctx, game) {
   const p = game.player;
   if (!p || !game.stage) return;
+  MOVE_LABEL = MOVE_LABELS[game.character] || MOVE_LABELS.blue;
   drawHp(ctx, p);
   drawBoss(ctx, game);
   drawKickLevel(ctx, p.kick);

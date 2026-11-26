@@ -11,6 +11,7 @@ const KEYMAP = {
   pause: ['Escape'],
   versus: ['KeyV'],      // 타이틀에서 2인 대전 시작
   endless: ['KeyB'],     // 타이틀에서 점수 모드 시작
+  character: ['KeyC'],   // 타이틀에서 캐릭터 바꾸기
   aux: ['Backquote'],
 };
 

@@ -3,6 +3,7 @@ export function createGame() {
   return {
     scene: 'boot',       // 'prologue' | 'title' | 'playing' | 'stageClear' | 'gameOver' | 'ending' (ui 담당이 관리)
     paused: false,
+    character: 'blue',   // 고른 주인공: 'blue'(파란 바지, 남) | 'red'(빨간 바지, 여). ui가 바꾸고 fx가 읽는다
     time: 0,             // 플레이 중 흐른 게임 시간(초)
 
     // 연출용 시간 제어 (fx 담당이 값을 넣고, main 루프가 따른다)

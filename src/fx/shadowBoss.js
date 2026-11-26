@@ -1,7 +1,7 @@
 // 보스 "어둠의 주인공" 그림. 주인공과 같은 리그와 같은 킥 모션을 쓰되 온몸이 어둡고 눈과 신발만 붉다.
 // 적 엔티티(type 'shadow', 'shadow2')의 state, action, attack을 보고 자세를 고른다. 손은 항상 주머니에.
 import { GROUND_Y } from '../core/config.js';
-import { HERO, kickDef } from './hero.js';
+import { HERO, HEROINE, kickDefFor, activeCharacter } from './hero.js';
 import { drawChar, mixPose } from './rig.js';
 import { clamp, lerp, smooth, easeOut, pathAt, rand, line } from './pix.js';
 import { mem } from './enemySprites.js';
@@ -30,9 +30,20 @@ const DARK = {
   },
 };
 
-// 주인공 리그로 그리는 적: 어둠의 주인공 둘, 그리고 1세대 발 마스터(프롤로그의 선배와 같은 모습)
-const SPEC = { shadow: DARK, shadow2: DARK, master: SENIOR };
-export const isShadow = (e) => !!SPEC[e.type];
+// 빨간 바지를 골랐을 때의 "어둠의 나": 같은 몸(포니테일, 팔짱)을 어둡게 칠한다
+const DARK_RED = {
+  ...HEROINE,
+  // 교복의 모양(깃, 리본, 치마, 포니테일)은 그대로 두고 색만 어둡게 한다. 리본과 치마만 붉다.
+  colors: { ...DARK.colors, skin: '#3a3350', skinD: '#2a2440', topL: '#272042', stripe: null, skirt: '#7a1630', skirtD: '#3a0c1c', skirtL: '#b0203a' },
+  head: { ...HEROINE.head, rows: HEROINE.head.rows.slice(), pal: { ...DARK.head.pal, b: '#3a3350' } },
+};
+
+// 주인공 리그로 그리는 적: 어둠의 주인공 둘(고른 캐릭터의 어두운 모습), 그리고 1세대 발 마스터(프롤로그의 선배)
+const TYPES = { shadow: 1, shadow2: 1, master: 1 };
+export const isShadow = (e) => !!TYPES[e.type];
+const specOfFoe = (e) => (e.type === 'master' ? SENIOR : activeCharacter() === 'red' ? DARK_RED : DARK);
+// 어둠의 나는 고른 캐릭터의 킥을 그대로 쓰고, 마스터는 파란 바지의 킥을 쓴다
+const kd = (e, move) => kickDefFor(e.type === 'master' ? 'blue' : undefined, move);
 
 const stand = () => ({ hip: [0, -15], lean: 1, sh: 0, head: [0, 0], near: [2, 0], far: [-2, 0] });
 const moveOf = (e, m) => {
@@ -55,7 +66,7 @@ function kickPose(def, T) {
 
 function poseFor(e, m, time) {
   const t = e.stateTime || 0;
-  const def = kickDef(moveOf(e, m));
+  const def = kd(e, moveOf(e, m));
   let P = stand();
   switch (e.state) {
     case 'walk': {
@@ -110,8 +121,8 @@ export function draw(g, e, time) {
   const m = mem(e);
   const P = poseFor(e, m, time);
   const x = Math.round(e.x), y = Math.round(e.y), fc = e.facing < 0 ? -1 : 1;
-  const S = SPEC[e.type] || DARK;
-  const dark = S === DARK;
+  const S = specOfFoe(e);
+  const dark = e.type !== 'master';
   const o = {};
   if (dark) o.outline = e.armor ? '#7aa0e0' : '#5a1fd0'; // 보랏빛 기운. 버티는 중에는 푸른 쇳빛
   else if (e.action === 'brazil') o.outline = Math.sin(time * 30) > 0 ? '#ffd84d' : '#ffffff'; // 새 기술을 꺼낼 때 금빛
@@ -128,7 +139,7 @@ export function draw(g, e, time) {
 
   // 킥 궤적: 뻗는 다리를 따라 붉은 잔상
   if (e.state === 'attack' && e.alive !== false) {
-    const def = kickDef(moveOf(e, m));
+    const def = kd(e, moveOf(e, m));
     for (let i = 3; i >= 1; i--) {
       const Pg = kickPose(def, Math.max(0, def.impact - i * 0.009));
       const tint = dark ? (i === 1 ? '#ff2a40' : '#7a1fd0') : (i === 1 ? '#ffffff' : '#ffd84d');

@@ -89,8 +89,143 @@ const KICKS = {
   },
 };
 
-// 모르는 move가 오면 기본(카프킥) 모션으로 대체
-export const kickDef = (move) => KICKS[move] || KICKS.calf;
+// ── 두 번째 주인공: 빨간 바지 (여) ──
+// 파란 바지가 꼿꼿이 서서 다리만 쓰는 것과 달리, 몸을 돌리고 뛰면서 찬다. 손은 쓰지 않고 팔짱을 낀다.
+// 기술 id(calf, high, mid, axe, fly)와 수치는 파란 바지와 같고 모션만 다르다. 그래서 전투 로직은 캐릭터를 몰라도 된다.
+export const HEROINE = {
+  ...HERO,
+  arms: 'free', upperArm: 5, foreArm: 5, armW: 3, fist: 3,
+  // 팔짱: 두 손을 가슴 앞에서 엇갈려 둔다
+  handPose(P, S) {
+    const sx = P.hip[0] + (P.lean || 0), sy = P.hip[1] - S.torsoH + (P.sh || 0);
+    return { nearHand: [sx + 4, sy + 6], farHand: [sx + 5, sy + 7] };
+  },
+  // 교복: 남색 블레이저, 흰 깃과 붉은 리본, 붉은 체크 치마, 검은 스타킹, 갈색 구두
+  colors: {
+    skin: '#fbd9bd', skinD: '#dcae90',
+    top: '#2f3b6e', topD: '#1f2748', topL: '#4a5890', arm: '#2f3b6e', armFar: '#1c2342', armShadow: '#161c36',
+    pants: '#2c2c3c', pantsFar: '#1c1c28', stripe: null,
+    shoe: '#6a4028', shoeFar: '#462a1a', sole: '#2a1a12', soleFar: '#1c120c',
+    skirt: '#c8323c', skirtD: '#8f1f2a', skirtL: '#f2a8a8',
+  },
+  head: {
+    ox: -3, oy: 1,
+    unit: 0.5,
+    // h 머리 / H 머리 윤기 / s 살 / d 그늘 / k 눈 / w 눈의 빛 / b 볼 / m 입
+    pal: { h: '#3a2030', H: '#8a4a5a', s: '#fbd9bd', d: '#dcae90', k: '#3a2440', w: '#ffffff', b: '#f6a0a8', m: '#e0607a' },
+    rows: [
+      '.....hhhhhhh....',
+      '...hhhhHHhhhhh..',
+      '..hhhHHHhhhhhhh.',
+      '.hhhhHhhhhhhhhhh',
+      '.hhhhhhhhhhhhhhh',
+      'hhhhhhhhhhshhshh',
+      'hhhhhhhhsssssssh',
+      'hhhhhhhssssskkss',
+      'hhhhhhdssssswkks',
+      'hhhhhhdsssssskks',
+      '.hhhhddsssbbssss',
+      '.hhhhddssssssss.',
+      '..hhhdddsssmmss.',
+      '..hhh.dddsssss..',
+      '...hh..ddssss...',
+      '...h....dss.....',
+    ],
+  },
+  // 높이 묶은 긴 포니테일과 붉은 리본. 몸이 기울면 반대로 흩날린다.
+  headBack(g, j, P, S) {
+    const C = (S || HEROINE).head.pal;
+    const sway = Math.round(-(P.lean || 0) * 0.8);
+    g.fillStyle = C.h;
+    g.fillRect(j.headX - 2, j.headY + 1, 3, 3);
+    g.fillRect(j.headX - 4 + sway, j.headY + 3, 3, 5);
+    g.fillRect(j.headX - 5 + sway * 2, j.headY + 7, 3, 5);
+    g.fillRect(j.headX - 5 + sway * 3, j.headY + 11, 2, 3);
+    g.fillStyle = C.H;
+    g.fillRect(j.headX - 3 + sway, j.headY + 4, 1, 4);
+    g.fillStyle = (S || HEROINE).colors.skirt; // 리본
+    g.fillRect(j.headX - 2, j.headY + 1, 2, 2);
+    g.fillRect(j.headX - 3, j.headY, 1, 1);
+    g.fillRect(j.headX - 3, j.headY + 3, 1, 1);
+  },
+  // 흰 깃과 붉은 리본, 블레이저 단추
+  torsoExtra(g, j, P, S) {
+    const C = (S || HEROINE).colors;
+    g.fillStyle = '#f4f4fa';
+    g.fillRect(j.sx, j.sy, 4, 2);
+    g.fillRect(j.sx + 2, j.sy + 2, 2, 1);
+    g.fillStyle = C.skirt;
+    g.fillRect(j.sx + 2, j.sy + 2, 2, 2);
+    g.fillRect(j.sx + 3, j.sy + 4, 1, 2);
+    g.fillStyle = '#e8c860';
+    g.fillRect(j.sx + 3, j.sy + 7, 1, 1);
+  },
+  // 체크 치마: 허리에서 아래로 퍼진다. 다리를 다 그린 뒤 맨 위에 덮는다.
+  extra(g, j, P, S) {
+    const C = (S || HEROINE).colors;
+    const sp = (S || HEROINE);
+    for (let i = 0; i < 6; i++) {
+      const x0 = j.hx - sp.bw - Math.floor(i * 0.5), x1 = j.hx + sp.fw + 1 + Math.ceil(i * 0.7);
+      g.fillStyle = i === 5 ? C.skirtD : C.skirt;
+      g.fillRect(x0, j.hy - 1 + i, x1 - x0, 1);
+      if (i === 2) { g.fillStyle = C.skirtL; g.fillRect(x0, j.hy - 1 + i, x1 - x0, 0.5); } // 가로 체크 줄
+    }
+    g.fillStyle = C.skirtD; // 세로 주름
+    g.fillRect(j.hx - 1, j.hy, 0.5, 5);
+    g.fillRect(j.hx + 2, j.hy, 0.5, 5);
+  },
+};
+
+// 빨간 바지의 킥. spin: 발이 닿기 전 이 비율까지는 등을 돌린 모습으로 그린다 (몸을 돌려 차는 느낌).
+// hop: 차는 동안 몸이 뜨는 높이.
+const KICKS_RED = {
+  // 1타 스냅 앞차기: 무릎을 접어 올렸다가 낮게 톡 찬다
+  calf: {
+    leg: 'near', swing: [0.014, 0.046], impact: 0.046, retract: 0.12, hip: [1, -1], lean: -1,
+    keys: [[0, 2, 0], [0.016, 6, -11], [0.03, 13, -9], [0.046, 21, -6], [0.09, 19, -6]],
+  },
+  // 2타 돌려차기: 반 바퀴 돌며 옆구리 높이로 휘두른다
+  high: {
+    leg: 'far', swing: [0.014, 0.046], impact: 0.046, retract: 0.15, hip: [2, -1], lean: -3, spin: 0.5,
+    keys: [[0, -2, 0], [0.014, -7, -8], [0.03, 5, -22], [0.046, 20, -28], [0.09, 18, -27]],
+  },
+  // 3타 뒤돌려차기: 등을 보이며 한 바퀴 돌아 뒤꿈치로 길게 찬다
+  mid: {
+    leg: 'near', swing: [0.014, 0.046], impact: 0.046, retract: 0.14, hip: [3, 0], lean: -4, spin: 0.72,
+    keys: [[0, 2, 0], [0.014, -9, -9], [0.03, 0, -19], [0.046, 24, -18], [0.09, 22, -18]],
+  },
+  // 4타 뛰어 돌려차기: 살짝 뛰어올라 공중에서 크게 돌려 찬다 (마무리)
+  axe: {
+    leg: 'far', swing: [0.03, 0.08], impact: 0.07, syncAt: 0.04, retract: 0.2, hip: [2, -1], lean: -3, big: true, spin: 0.6, hop: 10,
+    keys: [[0, -2, 0], [0.02, -7, -10], [0.04, 3, -25], [0.056, 14, -31], [0.07, 22, -24], [0.09, 20, -18], [0.11, 18, -6]],
+    retractMid: [9, -6],
+  },
+  // 날아차기: 공중에서 한 바퀴 돌아 찬다
+  fly: {
+    leg: 'near', swing: [0, 0.03], impact: 0.03, retract: 0.14, hip: [1, 0], lean: -3, big: true, spin: 0.5,
+    keys: [[0, -6, -6], [0.03, 19, -9], [3, 19, -9]],
+  },
+};
+
+// 캐릭터: 'blue'(파란 바지, 남) | 'red'(빨간 바지, 여). game.character로 고른다.
+const CHARS = {
+  blue: { spec: HERO, kicks: KICKS },
+  red: { spec: HEROINE, kicks: KICKS_RED },
+};
+let active = 'blue';
+export const setCharacter = (id) => { active = CHARS[id] ? id : 'blue'; };
+export const activeCharacter = () => active;
+export const specFor = (id) => (CHARS[id] || CHARS[active]).spec;
+// 그 캐릭터의 킥 모션. 캐릭터에 없는 기술(궁극기 등)은 공용 모션을, 모르는 기술은 1타 모션을 쓴다.
+export const kickDefFor = (id, move) => { const C = CHARS[id] || CHARS[active]; return C.kicks[move] || KICKS[move] || C.kicks.calf; };
+export const kickDef = (move) => kickDefFor(active, move);
+
+// 돌려 차는 킥을 그릴 때: 등을 돌린 구간인지, 얼마나 떠 있는지
+export function spinOf(def, T) {
+  const turned = !!def.spin && T < def.impact * def.spin;
+  const hop = def.hop ? def.hop * Math.sin(Math.PI * clamp(T / (def.impact * 1.7))) : 0;
+  return { turned, hop };
+}
 export const KICK_MOVES = Object.keys(KICKS);
 
 const st = {
@@ -199,6 +334,7 @@ function poseFor(p, time) {
 }
 
 export function update(game, dt, time) {
+  setCharacter(game.character); // 고른 캐릭터를 따라간다
   const p = game.player;
   if (!p) return;
   const k = p.kick || {};
@@ -357,6 +493,7 @@ export function draw(g, game, time) {
   if (!p) return;
   if (!st.pose) st.pose = poseFor(p, time);
   const P = Object.assign({}, st.pose);
+  const SP = specFor(active); // 고른 캐릭터의 모습
   const k = p.kick || {};
   const lv = clamp(k.level || 1, 1, 5);
   const L = levelOf(lv);
@@ -376,9 +513,9 @@ export function draw(g, game, time) {
       for (let i = L.after; i >= 1; i--) {
         const Tk = T - i * 0.009;
         if (Tk <= 0) continue;
-        const J = legJoints(HERO, hipX, hipY, pathAt(def.keys, Tk), true);
+        const J = legJoints(SP, hipX, hipY, pathAt(def.keys, Tk), true);
         g.globalAlpha = 0.55 - i * 0.09;
-        drawLegFlat(g, HERO, J, L.afterColor);
+        drawLegFlat(g, SP, J, L.afterColor);
       }
     });
   }
@@ -404,7 +541,17 @@ export function draw(g, game, time) {
     o.rot = -fall * fall * Math.PI / 2;
     o.pivotY = -6 * fall;
   }
-  drawChar(g, HERO, P, x, y, fc, o);
+  // 돌려 차는 킥: 발이 나가기 전에는 등을 돌린 모습으로, 뛰어 차는 킥은 몸을 띄워 그린다
+  const sp = kicking ? spinOf(def, T) : { turned: false, hop: 0 };
+  if (sp.turned) {
+    // 몸을 감아 도는 회전선
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 4; i++) {
+      const a = time * 40 + i * 1.6;
+      g.fillRect(Math.round(x + Math.cos(a) * 9), Math.round(y - 20 + i * 4 - sp.hop), 2, 1);
+    }
+  }
+  drawChar(g, SP, P, x, y - Math.round(sp.hop), sp.turned ? -fc : fc, o);
 
   if (trailOn && st.leg === 'near') local(() => drawArc(g, def, T, lv));
 

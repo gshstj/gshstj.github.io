@@ -7,7 +7,7 @@ import { KICK_LEVELS } from './hud.js';
 const blink = (t, speed = 2.5) => Math.floor(t * speed) % 2 === 0;
 const fadeIn = (t, dur = 0.3) => Math.max(0, Math.min(1, t / dur));
 
-export function drawTitle(ctx, t) {
+export function drawTitle(ctx, t, character = 'blue', charFlash = 0) {
   ctx.fillStyle = '#0d0e18';
   ctx.fillRect(0, 0, W, H);
   // 가로등 빛
@@ -51,8 +51,18 @@ export function drawTitle(ctx, t) {
   text(ctx, '마스터', 36, 140, { size: 44, bold: true, color: '#ffd84d' });
   text(ctx, '주머니에서 손은 빼지 않는다. 발 하나로 일짱까지.', 38, 162, { size: 11, color: '#b8b8c8' });
   if (blink(t)) rich(ctx, '[Enter] 스토리 시작', 38, 188, { size: 12, color: '#ffffff' });
-  rich(ctx, '[B] 점수 모드 (끝없이 버티기)', 38, 204, { size: 11, color: '#ffe0a0' });
-  rich(ctx, '[V] 2인 대전 (한 키보드로 둘이)', 38, 220, { size: 11, color: '#c8d4ff' });
+  rich(ctx, '[B] 점수 모드 (끝없이 버티기)', 38, 203, { size: 11, color: '#ffe0a0' });
+  rich(ctx, '[V] 2인 대전 (한 키보드로 둘이)', 38, 218, { size: 11, color: '#c8d4ff' });
+  // 캐릭터 고르기: 고른 쪽이 오른쪽 그림으로 나온다
+  const red = character === 'red';
+  rich(ctx, '[C] 캐릭터', 38, 233, { size: 11, color: '#e8e8f0' });
+  text(ctx, '파란 바지', 108, 233, { size: 11, bold: !red, color: !red ? '#7ab0ff' : '#5a5a70' });
+  text(ctx, '/', 158, 233, { size: 11, color: '#5a5a70' });
+  text(ctx, '빨간 치마', 168, 233, { size: 11, bold: red, color: red ? '#ff7a7a' : '#5a5a70' });
+  if (charFlash > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.min(0.5, charFlash)})`;
+    ctx.fillRect(300, 60, 150, 156);
+  }
   rich(ctx, '[A][D] 이동  [W] 점프  [J] 견제  [K] 킥  [Esc] 일시정지', W / 2, 254, { size: 10, align: 'center', color: '#9a9ab0' });
 }
 

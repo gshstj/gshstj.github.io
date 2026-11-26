@@ -79,6 +79,7 @@ function toTitle(game) {
 export function init(game) {
   initHud(game);
   initScore(game);
+  try { if (localStorage.getItem('kafkick.char') === 'red') game.character = 'red'; } catch (e) { /* 저장이 막힌 브라우저 */ }
   on(EV.PLAYER_DEAD, () => {
     // 친선전에서 브라질리언 킥을 맞고 쓰러졌으면 게임오버가 아니라 엔딩으로 간다
     if (game.scene === 'playing' && S.finale) { S.endTimer = 2.6; return; }
@@ -126,6 +127,13 @@ export function update(game, dt) {
       if (canInput && pressed('confirm')) transition(() => { enterPrologue(); setScene(game, 'prologue'); });
       else if (canInput && pressed('versus')) transition(() => { game.paused = false; startMatch(game); setScene(game, 'pvp'); });
       else if (canInput && pressed('endless')) transition(() => beginEndless(game));
+      else if (canInput && pressed('character')) {
+        // 캐릭터 바꾸기: 파란 바지(남) ↔ 빨간 바지(여). 다음에도 기억한다.
+        game.character = game.character === 'red' ? 'blue' : 'red';
+        S.charFlash = 0.5;
+        try { localStorage.setItem('kafkick.char', game.character); } catch (e) { /* 저장이 막힌 브라우저 */ }
+      }
+      S.charFlash = Math.max(0, (S.charFlash || 0) - dt);
       break;
 
     case 'pvp':
@@ -188,7 +196,7 @@ export function update(game, dt) {
 export function draw(ctx, game) {
   switch (game.scene) {
     case 'title':
-      drawTitle(ctx, S.sceneTime);
+      drawTitle(ctx, S.sceneTime, game.character, S.charFlash || 0);
       break;
     case 'prologue':
       drawPrologue(ctx);

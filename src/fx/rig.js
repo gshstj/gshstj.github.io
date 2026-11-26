@@ -93,6 +93,8 @@ function drawPocketArm(g, S, sx, sy, hx, hy, color, dx, dy, shadow) {
 //           stretchNear, stretchFar, nearToe, farToe, nearHand:[x,y], farHand:[x,y], stretchArm,
 //           shoeNear, shoeFar (색 덮어쓰기) }
 export function drawHumanoid(g, S, P) {
+  // 손 버릇이 정해진 캐릭터(팔짱 등)는 자세에 손 위치가 없으면 그 버릇대로 둔다
+  if (S.handPose && !P.nearHand) P = Object.assign({}, P, S.handPose(P, S));
   const C = S.colors;
   const hx = P.hip[0], hy = P.hip[1];
   const sx = hx + (P.lean || 0), sy = hy - S.torsoH + (P.sh || 0);
@@ -127,7 +129,7 @@ export function drawHumanoid(g, S, P) {
   }
   g.fillStyle = C.topD;
   g.fillRect(rhx - S.bw, rhy, wid, 1); // 밑단
-  if (S.torsoExtra) S.torsoExtra(g, joints, P);
+  if (S.torsoExtra) S.torsoExtra(g, joints, P, S);
 
   // 머리
   const H = S.head;
@@ -135,7 +137,7 @@ export function drawHumanoid(g, S, P) {
   const hu = H.unit || 1;
   joints.headX = q(rsx + H.ox + hdx);
   joints.headY = q(rsy - H.rows.length * hu + H.oy + hdy);
-  if (S.headBack) S.headBack(g, joints, P);
+  if (S.headBack) S.headBack(g, joints, P, S);
   sprite(g, H.rows, H.pal, joints.headX, joints.headY, hu);
 
   // 가까운 쪽 다리
@@ -152,7 +154,7 @@ export function drawHumanoid(g, S, P) {
   } else {
     joints.nearHand = drawArm(g, S, sx, sy + 2, P.nearHand || [hx + 1, hy + 2], C.arm, C.skin, P.stretchArm);
   }
-  if (S.extra) S.extra(g, joints, P);
+  if (S.extra) S.extra(g, joints, P, S);
   return joints;
 }
 
