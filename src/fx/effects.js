@@ -88,7 +88,7 @@ function crack(x, size) {
 }
 
 // 킥 종류별 타격 방향 (라디안. +는 아래쪽)
-const HIT_ANGLE = { calf: 0.4, high: -0.55, mid: 0, axe: 1.25, rise: -1.35 };
+const HIT_ANGLE = { calf: 0.4, high: -0.55, mid: 0, axe: 1.25, rise: -1.35, fly: 0.35, brazil: 1.1 };
 
 // ── 단계별 타격 이펙트 ──
 function levelHit(lv, x, y, dir, ang, crit, target) {
@@ -188,7 +188,13 @@ export function kickHit(game, d) {
   const ang = HIT_ANGLE[d.move] ?? 0.2;
   const crit = !!d.crit;
 
+  // 맞는 순간 화면이 하얗게 한 번 튄다 (강타는 더 세게)
+  screen.flash = Math.max(screen.flash, crit ? 0.45 : 0.14);
+  screen.flashColor = '#ffffff';
   levelHit(lv, x, y, dir, ang, crit, target);
+  // 타격 지점에서 사방으로 튀는 파편
+  radial(x, y, crit ? 14 : 6, { v0: 90, v1: crit ? 300 : 200, l0: 0.1, l1: 0.3,
+    p: { type: 'px', g: 420, size: crit ? 2 : 1, colors: ['#ffffff', '#ffe9a8', '#ff9a50'], bounce: true } });
 
   if (crit) {
     critOverlay(lv, x, y, dir, ang, d, target);

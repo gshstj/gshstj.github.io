@@ -68,6 +68,11 @@ export function initHud(game) {
     hud.checkpointNow = false;
     if (hud.firstWave) { hud.firstWave = false; return; }
     const count = game.stage.waves.length;
+    const w = game.stage.waves[wave];
+    if (w.boss) {
+      pushBanner({ title: w.title || 'BOSS · 어둠의 나', sub: w.sub || (checkpoint ? '체크포인트! 쓰러져도 여기부터 다시' : '발차기만 쓰는 또 다른 나'), color: '#c08cff', dur: T.bannerTime + 1 });
+      return;
+    }
     pushBanner({
       title: `웨이브 ${wave + 1} / ${count}`,
       sub: checkpoint ? '체크포인트! 쓰러져도 여기부터 다시' : wave === count - 1 ? '마지막 웨이브' : '',
@@ -81,6 +86,10 @@ export function initHud(game) {
     pushBanner({ title: `카프킥 ${level}단계!`, sub: lv.name, color: lv.color, dur: T.levelUpTime }, true);
   });
   on(EV.PLAYER_HIT, () => { hud.hpFlash = 0.35; });
+  // 친선전 피날레: 마스터가 새 기술의 이름을 댄다
+  on('friendly:finale', ({ step }) => {
+    if (step === 'call') pushBanner({ title: '"새 기술을 보여 주지."', sub: '1세대 발 마스터 · 브라질리언 킥', color: '#ffd84d', dur: 1.8 }, true);
+  });
 }
 
 export function updateHud(game, dt) {
@@ -173,7 +182,7 @@ function drawStageInfo(ctx, game) {
     const done = i < pr.wave || (i === pr.wave && (pr.resting || pr.cleared));
     ctx.fillStyle = done ? '#7fd08a' : i === pr.wave ? (Math.floor(hud.t * 3) % 2 ? '#ffd84d' : '#fff0a8') : '#33333f';
     ctx.fillRect(x, y, pw, 4);
-    if (i === pr.checkpoint) {
+    if ([].concat(pr.checkpoint).includes(i)) {
       ctx.fillStyle = pr.restartWave === i ? '#7ce0d0' : '#6a7896';
       ctx.fillRect(x, y + 6, pw, 2);
     }
@@ -250,10 +259,28 @@ function drawBanner(ctx) {
   ctx.globalAlpha = 1;
 }
 
+// 보스 체력바: 화면 위 가운데
+function drawBoss(ctx, game) {
+  const b = game.enemies.find((e) => e.boss && e.alive);
+  if (!b) return;
+  const w = 180, x = W / 2 - w / 2, y = 30;
+  const r = Math.max(0, Math.min(1, b.hp / b.maxHp));
+  text(ctx, b.bossName || 'BOSS', W / 2, y - 3, { size: 10, bold: true, align: 'center', color: '#d8b8ff' });
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(x - 1, y - 1, w + 2, 7);
+  ctx.fillStyle = '#2a1840';
+  ctx.fillRect(x, y, w, 5);
+  ctx.fillStyle = b.armor ? '#a9c4e8' : '#9a3cff';
+  ctx.fillRect(x, y, Math.round(w * r), 5);
+  ctx.fillStyle = '#e0b8ff';
+  ctx.fillRect(x, y, Math.round(w * r), 1);
+}
+
 export function drawHud(ctx, game) {
   const p = game.player;
   if (!p || !game.stage) return;
   drawHp(ctx, p);
+  drawBoss(ctx, game);
   drawKickLevel(ctx, p.kick);
   drawStageInfo(ctx, game);
   drawCombo(ctx, p);

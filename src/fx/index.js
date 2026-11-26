@@ -21,6 +21,18 @@ import * as fxs from './effects.js';
 import * as backgrounds from './backgrounds.js';
 import { drawEnemy, drawTelegraph, drawProjectile, mem } from './enemySprites.js';
 import * as col from './col.js';
+import * as shadowBoss from './shadowBoss.js';
+
+import { sfx, init as initSfx } from './sfx.js';
+
+// 보스는 주인공과 같은 그림 방식으로 따로 그린다.
+// 맞은 직후(번쩍이는 동안)에는 몸이 좌우로 떨려서 맞았다는 느낌이 난다.
+function drawFoe(g, e, t) {
+  const hit = e.alive !== false && mem(e).flash > 0;
+  if (hit) { g.save(); g.translate(Math.sin(t * 190) > 0 ? 1.5 : -1.5, 0); }
+  if (shadowBoss.isShadow(e)) shadowBoss.draw(g, e, t); else drawEnemy(g, e, t);
+  if (hit) g.restore();
+}
 
 const M = backgrounds.M;
 // 장면 버퍼: 논리 해상도 그대로(사방 여백 M) 그린 뒤 화면에 한 번에 찍는다.
@@ -62,6 +74,44 @@ export function init(game) {
   on(XEV.ENEMY_BRACE, (d) => fxs.brace(game, d || {}));
   on(XEV.ENEMY_SWAP, (d) => fxs.swap(game, d || {}));
   on(XEV.PROJECTILE_END, (d) => fxs.projectileEnd(game, d || {}));
+  // 타격음
+  initSfx();
+  on(EV.KICK_START, () => sfx.whoosh());
+  on(EV.KICK_HIT, (d) => sfx.hit(!!(d && d.crit), (d && d.level) || 1));
+  on(EV.PUNCH_HIT, () => sfx.punch());
+  on(EV.PARRY_SUCCESS, () => sfx.parry());
+  on(EV.PLAYER_HIT, () => sfx.hurt());
+  on(EV.ENEMY_HIT, (d) => { if (d && d.armored) sfx.block(); });
+  on(EV.ENEMY_DOWN, () => sfx.down());
+  on(EV.KICK_LEVEL_UP, () => sfx.levelUp());
+  on('fx:col', () => sfx.surge());
+
+  // 친선전 피날레: 브라질리언 킥이 꽂히는 순간 화면이 멈추듯 느려진다
+  on('friendly:finale', (d) => {
+    if (!d) return;
+    if (d.step === 'call') { fxs.screen.dim = 0.6; fxs.screen.dimHold = 1.2; sfx.boss(); return; }
+    fxs.slow(1.6, 0.18);
+    fxs.screen.flash = 1;
+    fxs.screen.flashColor = '#fff6c8';
+    fxs.screen.dim = 0.9;
+    fxs.screen.dimHold = 1.4;
+    fxs.addShake(99);
+    fxs.punchZoom(0.3, d.x, d.y, 1.2);
+    game.hitstop = Math.max(game.hitstop || 0, 0.28);
+    sfx.hit(true, 5);
+  });
+
+  // 보스 등장: 화면이 어두워지며 보랏빛으로 번쩍인다
+  on(EV.ENEMY_SPAWN, (d) => {
+    if (!d || !d.enemy || !shadowBoss.isShadow(d.enemy)) return;
+    sfx.boss();
+    if (d.enemy.type === 'master') return; // 친선전 상대는 조용히 서 있다
+    fxs.screen.flash = 0.8;
+    fxs.screen.flashColor = '#7a3cff';
+    fxs.screen.dim = 0.65;
+    fxs.screen.dimHold = 1.2;
+    fxs.addShake(5);
+  });
   on('fx:col', (d) => {
     col.start(d || {});
     fxs.addShake(99);
@@ -117,8 +167,8 @@ export function drawWorld(ctx, game) {
   if (p && p.alive !== false) shadow(g, p);
   particles.draw(g, true);
   // 쓰러진 적을 먼저, 서 있는 적을 그 위에
-  for (const e of game.enemies) if (e.alive === false) drawEnemy(g, e, time);
-  for (const e of game.enemies) if (e.alive !== false) drawEnemy(g, e, time);
+  for (const e of game.enemies) if (e.alive === false) drawFoe(g, e, time);
+  for (const e of game.enemies) if (e.alive !== false) drawFoe(g, e, time);
   for (const pr of game.projectiles) if (pr.alive !== false) drawProjectile(g, pr, time);
   if (p) hero.draw(g, game, time);
   col.draw(g, true);

@@ -77,6 +77,16 @@ const KICKS = {
     keys: [[0, 2, 0], [0.03, 9, -7], [0.07, 13, -24], [0.1, 9, -39], [2, 9, -39]],
     retractMid: [10, -12],
   },
+  // 날아차기(점프 중 K): 공중에서 오른발을 앞으로 곧게 뻗은 채 내려온다
+  fly: {
+    leg: 'near', swing: [0, 0.03], impact: 0.03, retract: 0.14, hip: [1, 0], lean: -2, big: true,
+    keys: [[0, 3, -3], [0.03, 18, -7], [3, 18, -7]],
+  },
+  // 브라질리언 킥(1세대 발 마스터의 기술): 미들킥처럼 나가다가 무릎을 꺾어 머리 위에서 내리꽂는다
+  brazil: {
+    leg: 'near', swing: [0.016, 0.09], impact: 0.09, retract: 0.22, hip: [2, -1], lean: -1, big: true,
+    keys: [[0, 2, 0], [0.016, 3, -11], [0.04, 16, -17], [0.058, 19, -24], [0.074, 21, -36], [0.09, 23, -25], [0.4, 22, -24]],
+  },
 };
 
 // 모르는 move가 오면 기본(카프킥) 모션으로 대체
@@ -158,6 +168,7 @@ function poseFor(p, time) {
       if (st.leg === 'near') {
         P.near = f; P.stretchNear = true;
         P.far = st.from ? mixPt(st.from.far, [-2, 0], sup) : [-2, 0];
+        if (st.move === 'fly') P.far = [-5, -9]; // 날아차기: 뒷다리는 접어 올린다
       } else {
         P.far = f; P.stretchFar = true;
         P.near = st.from ? mixPt(st.from.near, [1, 0], sup) : [1, 0];

@@ -6,7 +6,7 @@ import { drawChar } from './rig.js';
 import { pathAt } from './pix.js';
 
 // 선배: 주인공과 같은 체형, 어두운 점퍼에 갈색 머리. 역시 손은 주머니에.
-const SENIOR = {
+export const SENIOR = {
   ...HERO,
   colors: {
     ...HERO.colors,

@@ -15,8 +15,9 @@ import { updateProjectiles } from './projectiles.js';
 import { brawler } from './brawler.js';
 import { shooter } from './shooter.js';
 import { speedster } from './speedster.js';
+import { shadow, shadow2, master } from './shadow.js';
 
-const TYPES = { brawler, shooter, speedster };
+const TYPES = { brawler, shooter, speedster, shadow, shadow2, master };
 
 export function spawnEnemy(game, type, x) {
   let def = TYPES[type];

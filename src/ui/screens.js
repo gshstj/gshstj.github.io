@@ -135,13 +135,15 @@ export function drawEnding(ctx, t) {
   ctx.fillRect(0, 214, W, H - 214);
   ctx.fillStyle = '#2a2c40';
   ctx.fillRect(0, 214, W, 1);
-  figure(ctx, 100, 214, { who: 'hero', pose: 'stand', scale: 3, facing: 1, t });
+  // 브라질리언 킥을 찬 채 선 1세대 발 마스터
+  figure(ctx, 92, 214, { who: 'senior', pose: 'kick', move: 'brazil', scale: 3, facing: 1, t });
 
   const lines = [
-    { s: '뒷골목과 교실은 이제 조용하다.', y: 70, o: { size: 12, color: '#eeeef4' } },
-    { s: '하지만 일짱의 자리는 아직 멀다.', y: 90, o: { size: 12, color: '#eeeef4' } },
-    { s: '체육관, 옥상, 그리고 일짱의 자리.', y: 124, o: { size: 11, color: '#b8b8c8' } },
-    { s: '다음 이야기는 준비 중', y: 150, o: { size: 18, bold: true, color: '#ffd84d' } },
+    { s: '어둠의 나는 넘었다.', y: 46, o: { size: 11, color: '#eeeef4' } },
+    { s: '그러나 그 발은 끝내 닿지 않았다.', y: 62, o: { size: 11, color: '#eeeef4' } },
+    { s: '"이게 브라질리언 킥이다. 다음엔 막아 봐라."', y: 86, o: { size: 12, bold: true, color: '#ffd84d' } },
+    { s: '— 1세대 발 마스터', y: 102, o: { size: 10, color: '#b8b8c8' } },
+    { s: '시즌 2 예정', y: 148, o: { size: 26, bold: true, color: '#ffd84d' } },
   ];
   lines.forEach((l, i) => {
     const a = fadeIn(t - i * 0.5, 0.5);

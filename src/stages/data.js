@@ -11,13 +11,13 @@
 //       { type, side, gap }    화면 밖 'left' | 'right'에서 걸어 들어온다. gap은 화면 끝에서 떨어진 거리
 //       delay                  웨이브가 시작되고 이만큼 지난 뒤에 나오는 증원 (초)
 //
-// 적 타입 id: brawler(격투형), shooter(사격형), speedster(스피드형)
+// 적 타입 id: brawler(격투형), shooter(사격형), speedster(스피드형), shadow / shadow2(보스: 어둠의 주인공)
 
 export const STAGES = [
   {
     // 조작과 패링을 익히는 스테이지. 격투형만 나온다.
     id: 'alley', name: '뒷골목', width: 720, bg: 'alley',
-    checkpoint: 2,
+    checkpoint: [2, 4], // 배열로 여러 개를 줄 수 있다. 마지막은 보스 웨이브
     waves: [
       {
         hint: '[A][D] 이동  [W] 점프  [J] 견제  [K] 킥 · 이어 누르면 4타 콤보',
@@ -42,12 +42,18 @@ export const STAGES = [
           { type: 'brawler', side: 'right', gap: 50, delay: 4 },
         ],
       },
+      {
+        // 보스전: 어둠의 주인공 (미러전). 발차기만 쓴다.
+        boss: true,
+        hint: '나와 똑같이 찬다. 발차기 직전 [K] 패링 → 카운터, 4타가 끝난 빈틈을 노려라',
+        spawns: [{ type: 'shadow', side: 'right', gap: 30 }],
+      },
     ],
   },
   {
     // 격투형과 사격형이 섞여 나오고, 마지막 웨이브에 스피드형이 맛보기로 나온다.
     id: 'classroom', name: '교실', width: 960, bg: 'classroom',
-    checkpoint: 2,
+    checkpoint: [2, 5],
     waves: [
       {
         hint: '날아오는 물건도 [K]로 쳐낼 수 있다. 쳐낸 물건은 적에게 돌아간다',
@@ -85,6 +91,27 @@ export const STAGES = [
           { type: 'shooter', side: 'left', delay: 3 },
           { type: 'speedster', side: 'left', gap: 50, delay: 6 },
         ],
+      },
+      {
+        // 보스전: 더 빠르고 단단해진 어둠의 주인공
+        boss: true,
+        hint: '더 빨라졌다. 연타는 버티고 받아친다. 패링과 빈틈만 노려라',
+        spawns: [{ type: 'shadow2', side: 'right', gap: 30 }],
+      },
+    ],
+  },
+  {
+    // 친선전: 1세대 발 마스터. 절대 이길 수 없고, 브라질리언 킥을 맞으면 엔딩으로 넘어간다.
+    id: 'friendly', name: '골목 끝 · 친선전', width: 560, bg: 'alley',
+    friendly: true,
+    checkpoint: 0,
+    waves: [
+      {
+        boss: true,
+        title: '친선전 · 1세대 발 마스터',
+        sub: '프롤로그의 그 선배. 이길 수 없다',
+        hint: '어떤 발차기도 통하지 않는다. 버틸 수 있는 만큼 버텨 봐라',
+        spawns: [{ type: 'master', x: 330 }],
       },
     ],
   },

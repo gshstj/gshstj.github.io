@@ -51,6 +51,8 @@ function newCtl() {
     punchDone: false, punchHit: false,
     xpGain: 0,                           // 아직 반영하지 않은 경험치
     rise: null,
+    fly: null,                           // 날아차기 진행 상태 { hit, landed }
+    airKicked: false,                    // 이번 점프에 이미 날아차기를 썼다
   };
 }
 
@@ -127,6 +129,7 @@ function takeHit(game, p, { damage = 1, knockback = 80, source = null } = {}) {
   if (source) dir = source.kind !== 'enemy' && source.vx ? Math.sign(source.vx) : (source.x > p.x ? -1 : 1);
   p.vx = dir * knockback;
   endCombo(p); // 맞으면 콤보가 끊긴다
+  c.fly = null;
   c.kickBuf = c.punchBuf = c.jumpBuf = 0;
   c.jumpHeld = false;
   p.state = 'hurt';
@@ -362,6 +365,72 @@ function updateCol(game, p, dt) {
 }
 
 // ---------------------------------------------------------------------------
+// 날아차기: 점프 중 K. 발을 앞으로 뻗은 채 내려오며, 처음 닿은 적 하나를 강타로 찬다.
+function startFly(game, p, dir) {
+  const k = p.kick, c = p.ctl, F = T.fly;
+  if (dir) p.facing = dir;
+  endCombo(p);
+  Object.assign(k, {
+    phase: 'strike', step: k.comboLength - 1, move: 'fly', foot: 'right',
+    time: 0, hitAt: F.startup, strikeTime: F.startup, recoverTime: F.land, connected: false,
+  });
+  c.kickBuf = 0;
+  c.airKicked = true;
+  c.fly = { hit: false, landed: -1 };
+  p.state = 'kick';
+  p.stateTime = 0;
+  p.vx = p.facing * F.boost;
+  emit(EV.KICK_START, { move: 'fly', foot: 'right', step: k.step, level: k.level });
+}
+
+function updateFly(game, p, dt) {
+  const k = p.kick, c = p.ctl, F = T.fly;
+  k.time += dt;
+  if (c.fly.landed < 0) {
+    if (!c.fly.hit && k.time >= F.startup - EPS) {
+      // 발끝 높이에 몸이 걸치는 가장 가까운 적
+      let target = null;
+      for (const e of game.enemies) {
+        if (!e.alive) continue;
+        const d = frontDist(p, e);
+        if (d < -10 || d > F.range + e.w / 2) continue;
+        if (p.y < e.y - e.h - 10) continue; // 머리 위로 지나갔다
+        if (!target || d < frontDist(p, target)) target = e;
+      }
+      if (target) {
+        c.fly.hit = true;
+        k.connected = true;
+        const lv = k.level - 1;
+        const damage = F.damage * (1 + T.level.damageBonus * lv);
+        target.takeHit({ damage, knockback: F.knockback * (1 + T.level.knockbackBonus * lv), crit: true, source: p });
+        emit(EV.KICK_HIT, {
+          target, move: 'fly', foot: 'right', step: k.step, finisher: true, crit: true, damage,
+          level: k.level, x: target.x, y: Math.min(target.y - 8, p.y - 6), counter: false,
+        });
+        p.vx = -p.facing * 50; // 차고 나서 살짝 튕겨 물러난다
+        p.vy = Math.min(p.vy, -F.bounce);
+      }
+    }
+    if (p.onGround) {
+      c.fly.landed = 0;
+      p.vx = 0;
+      k.phase = 'recover';
+      k.strikeTime = k.time;
+      k.recoverTime = F.land + (c.fly.hit ? 0 : F.whiff);
+      setState(p, 'recover');
+      if (!c.fly.hit) emit(EV.KICK_MISS, { move: 'fly', foot: 'right', step: k.step, x: p.x + p.facing * F.range, y: p.y - 6 });
+    }
+  } else {
+    c.fly.landed += dt;
+    if (c.fly.landed >= k.recoverTime - EPS) {
+      c.fly = null;
+      endCombo(p);
+      setState(p, 'idle');
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 타격(J): 어깨치기
 function startPunch(p, dir) {
   const c = p.ctl;
@@ -418,9 +487,13 @@ function updateFree(game, p, dt, inp) {
       startPunch(p, dir);
       return;
     }
+  } else if (c.kickBuf > 0 && !c.airKicked) {
+    startFly(game, p, dir); // 점프 중 K = 날아차기
+    return;
   } else {
-    c.kickBuf = Math.max(0, c.kickBuf - dt); // 착지 직전에 누른 K는 착지하자마자 나간다
+    c.kickBuf = Math.max(0, c.kickBuf - dt);
   }
+  if (p.onGround) c.airKicked = false;
 
   autoFace(game, p, dir);
   if (p.onGround) {
@@ -481,6 +554,8 @@ export function updatePlayer(game, dt) {
 
     if (c.rise) {
       updateCol(game, p, dt);
+    } else if (c.fly) {
+      updateFly(game, p, dt);
     } else if (pressed('aux') && p.onGround && p.state !== 'hurt') {
       startCol(game, p, inp.dir);
     } else if (p.state === 'hurt') {

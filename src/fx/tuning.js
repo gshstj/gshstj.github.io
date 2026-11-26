@@ -4,19 +4,19 @@ export const TUNE = {
   maxParticles: 420,          // 파티클 상한 (60fps 유지용)
 
   // 히트스톱(초). 일반 히트는 콤보 연타가 끊기지 않게 아주 짧다.
-  hitstop: { normal: 0.03, crit: 0.1, critPerLevel: 0.012, parry: 0.05, playerHit: 0.06, levelUp: 0.1 },
+  hitstop: { normal: 0.055, crit: 0.15, critPerLevel: 0.012, parry: 0.05, playerHit: 0.06, levelUp: 0.1 },
 
   // 화면 흔들림 세기(px). max는 화면 여백(8px)보다 작아야 한다.
-  shake: { normal: 1.6, perLevel: 0.35, crit: 5, parry: 3, playerHit: 5, punch: 1, max: 7, decay: 26 },
+  shake: { normal: 2.8, perLevel: 0.4, crit: 6.5, parry: 3, playerHit: 5, punch: 1, max: 7, decay: 26 },
 
   // 줌인. 1에 더해지는 값.
-  zoom: { crit: 0.09, critPerLevel: 0.014, parry: 0.06, levelUp: 0.05, hold: 0.1 },
+  zoom: { crit: 0.13, critPerLevel: 0.014, parry: 0.06, levelUp: 0.05, hold: 0.1 },
 
   // 패링 슬로우
   slow: { parryTime: 0.3, parryScale: 0.3, deadTime: 0.7, deadScale: 0.4 },
 
   // 적 공격 예고에서 "지금 차면 패링" 표시를 켜는 timeToHit 기준 (기획: 약 0.15초)
-  parryHint: 0.15,
+  parryHint: 0.22, // player의 parry.window와 같아야 번쩍이는 순간이 실제 판정과 맞는다
 
   camera: { lookAhead: 28, follow: 6 },
 

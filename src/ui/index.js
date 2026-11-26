@@ -43,6 +43,8 @@ function beginStage(game, index, retry = false) {
   else S.stats = newStats();
   S.deathTimer = 0;
   S.clearTimer = 0;
+  S.finale = false;
+  S.endTimer = 0;
   game.paused = false;
   startStage(game, index, { fromCheckpoint: retry });
   setScene(game, 'playing');
@@ -58,9 +60,12 @@ function toTitle(game) {
 export function init(game) {
   initHud(game);
   on(EV.PLAYER_DEAD, () => {
+    // 친선전에서 브라질리언 킥을 맞고 쓰러졌으면 게임오버가 아니라 엔딩으로 간다
+    if (game.scene === 'playing' && S.finale) { S.endTimer = 2.6; return; }
     // 클리어가 먼저 났으면 클리어가 이긴다
     if (game.scene === 'playing' && S.clearTimer <= 0) S.deathTimer = T.deathDelay;
   });
+  on('friendly:finale', ({ step }) => { if (step === 'hit') S.finale = true; });
   on(EV.STAGE_CLEAR, () => {
     S.clearTimer = T.clearDelay;
     S.deathTimer = 0;
@@ -108,8 +113,13 @@ export function update(game, dt) {
       break;
 
     case 'playing': {
-      const busy = S.deathTimer > 0 || S.clearTimer > 0;
-      if (S.deathTimer > 0) {
+      const busy = S.deathTimer > 0 || S.clearTimer > 0 || S.endTimer > 0;
+      if (S.endTimer > 0) {
+        S.endTimer -= dt;
+        if (S.endTimer <= 0) { S.endTimer = 0; transition(() => setScene(game, 'ending')); }
+      } else if (S.finale && !game.player.alive) {
+        // 엔딩으로 넘어가는 중: 입력을 받지 않는다
+      } else if (S.deathTimer > 0) {
         S.deathTimer -= dt;
         if (S.deathTimer <= 0) setScene(game, 'gameOver');
       } else if (S.clearTimer > 0) {

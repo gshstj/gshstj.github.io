@@ -127,6 +127,57 @@ export const PROJECTILE = {
   outMargin: 24,
 };
 
+// 보스: 어둠의 주인공 (미러전). 주인공과 똑같이 주머니에 손을 넣고 발차기만 쓴다.
+// 주인공의 4타 킥 콤보(카프킥 → 하이킥 → 미들킥 → 내려찍기)를 그대로 쓰고, 모든 킥은 패링할 수 있다.
+// 공격 중에는 버티기라 약한 타격으로 끊기지 않는다. 패링하거나, 물러났다가 빈틈에 콤보를 넣는다.
+export const SHADOW = {
+  boss: true, name: '어둠의 나',
+  w: 14, h: 30, hp: 42,
+  speed: 72,
+  standoff: 46, attackRange: 24, chaseRange: 72, lungeTime: 0.1,
+  combo: [
+    { action: 'calf', kind: 'low',  height: 'low',  windup: 0.36, active: 0.10, reach: 30, damage: 1, knockback: 90,  parryable: true, lunge: 10, gap: 0.10 },
+    { action: 'high', kind: 'high', height: 'high', windup: 0.24, active: 0.10, reach: 30, damage: 1, knockback: 110, parryable: true, lunge: 10, gap: 0.10 },
+    { action: 'mid',  kind: 'high', height: 'mid',  windup: 0.24, active: 0.10, reach: 32, damage: 1, knockback: 150, parryable: true, lunge: 12, gap: 0.30 },
+    { action: 'axe',  kind: 'high', height: 'high', windup: 0.42, active: 0.12, reach: 32, damage: 2, knockback: 220, parryable: true, lunge: 14, gap: 0 },
+  ],
+  recover: 0.7, abortRecover: 0.35,
+  cooldown: [0.5, 0.9], firstCooldown: [1.2, 1.5], afterHurtDelay: 0.3,
+  // 연타 대응: 약한 타격을 3번 연달아 맞으면 버티고 내려찍기로 받아친다 (패링 가능)
+  braceHits: 3,
+  counter: { action: 'brace', kind: 'high', height: 'high', windup: 0.36, active: 0.12, reach: 34, damage: 2, knockback: 220, parryable: true, lunge: 0, gap: 0 },
+  counterRecover: 0.6,
+  armorDamageMult: 0.4,
+  flinch: 0.14, critFlinch: 0.35, kbMult: 0.2, kbMultOpen: 0.05,
+  launchMult: 0.8, launchVy: 240, knockdown: 0.5, stun: 0.9,
+};
+
+// 두 번째 스테이지의 보스: 더 빠르고 더 단단하다
+const faster = (s) => Object.assign({}, s, { windup: +(s.windup * 0.82).toFixed(3) });
+export const SHADOW2 = Object.assign({}, SHADOW, {
+  hp: 64, speed: 88,
+  combo: SHADOW.combo.map(faster),
+  counter: faster(SHADOW.counter),
+  cooldown: [0.35, 0.65], recover: 0.6, stun: 0.8,
+});
+
+// 친선전 상대: 1세대 발 마스터. 절대 이길 수 없다.
+// 어떤 공격도 데미지가 들어가지 않고(가볍게 받아 흘린다), 패링해도 한 발 물러날 뿐이다.
+// finaleAfter초가 지나거나 주인공 체력이 1 이하가 되면 새 기술 "브라질리언 킥"으로 끝낸다.
+const quick = (s) => Object.assign({}, s, { windup: +(s.windup * 0.72).toFixed(3), damage: 1 });
+export const MASTER = Object.assign({}, SHADOW, {
+  name: '1세대 발 마스터',
+  untouchable: true,
+  hp: 999, speed: 100,
+  combo: SHADOW.combo.map(quick),
+  counter: quick(SHADOW.counter),
+  cooldown: [0.3, 0.55], firstCooldown: [1.6, 1.9], recover: 0.5,
+  finaleAfter: 24,       // 이 시간이 지나면 피날레 (초)
+  finaleCall: 1.3,       // 피날레 직전에 자세를 잡는 시간
+  finaleWindup: 0.6,     // 브라질리언 킥 예고
+  finaleKnockback: 330,
+});
+
 // 공격 차례 조율
 export const DIRECTOR = {
   gap: 0.3,              // 한 적이 공격 차례를 받거나 끝낸 뒤, 다음 적이 차례를 받기까지의 간격

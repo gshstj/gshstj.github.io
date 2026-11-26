@@ -48,7 +48,8 @@ function beginWave(game, wave) {
   st.pending = stage.waves[wave].spawns
     .map((s) => ({ ...s, delay: s.delay || 0 }))
     .sort((a, b) => a.delay - b.delay);
-  if (wave === stage.checkpoint && st.restartWave !== wave) {
+  // checkpoint는 번호 하나이거나 번호 배열이다 (보스 웨이브도 체크포인트)
+  if ([].concat(stage.checkpoint).includes(wave) && st.restartWave !== wave) {
     st.restartWave = wave;
     emit(SEV.CHECKPOINT, { index: game.stageIndex, wave });
   }
